@@ -12,12 +12,14 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/*
+ * La app todavía usa un diseño claro fijo (fondos blancos/slate-50 en
+ * todos los formularios y tarjetas). Si se activa aquí el modo oscuro
+ * automático del sistema, el texto queda casi blanco sobre esos fondos
+ * blancos y se vuelve ilegible (bug reportado: "no se ven los datos").
+ * Cuando se implemente un modo oscuro real para toda la app, reactivar
+ * esto con los estilos de componentes correspondientes.
+ */
 
 body {
   background: var(--background);
