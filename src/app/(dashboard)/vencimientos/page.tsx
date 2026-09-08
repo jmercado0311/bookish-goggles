@@ -1,0 +1,63 @@
+import { requireUser } from "@/lib/auth";
+import type {
+  Company,
+  CompanyIca,
+  CompanyResponsibility,
+  CustomObligation,
+  TaxCalendarEntry,
+} from "@/lib/types";
+import { computeCompanyDeadlines } from "@/lib/tax-rules/compute-deadlines";
+import { DeadlinesView } from "./deadlines-view";
+
+export default async function VencimientosPage() {
+  const { supabase } = await requireUser();
+  const year = new Date().getFullYear();
+
+  const [
+    { data: companies },
+    { data: responsibilities },
+    { data: icas },
+    { data: customObligations },
+    { data: taxCalendar },
+  ] = await Promise.all([
+    supabase.from("companies").select("*").order("razon_social"),
+    supabase.from("company_responsibilities").select("*"),
+    supabase.from("company_ica").select("*"),
+    supabase.from("custom_obligations").select("*"),
+    supabase.from("tax_calendar").select("*").eq("year", year),
+  ]);
+
+  const responsibilitiesByCompany = new Map<string, CompanyResponsibility[]>();
+  for (const r of (responsibilities ?? []) as CompanyResponsibility[]) {
+    if (!responsibilitiesByCompany.has(r.company_id)) responsibilitiesByCompany.set(r.company_id, []);
+    responsibilitiesByCompany.get(r.company_id)!.push(r);
+  }
+
+  const icaByCompany = new Map<string, CompanyIca>();
+  for (const i of (icas ?? []) as CompanyIca[]) icaByCompany.set(i.company_id, i);
+
+  const customByCompany = new Map<string, CustomObligation[]>();
+  for (const c of (customObligations ?? []) as CustomObligation[]) {
+    if (!customByCompany.has(c.company_id)) customByCompany.set(c.company_id, []);
+    customByCompany.get(c.company_id)!.push(c);
+  }
+
+  const deadlines = computeCompanyDeadlines({
+    companies: (companies ?? []) as Company[],
+    responsibilitiesByCompany,
+    icaByCompany,
+    customObligationsByCompany: customByCompany,
+    taxCalendar: (taxCalendar ?? []) as TaxCalendarEntry[],
+    year,
+  });
+
+  return (
+    <div>
+      <h1 className="mb-1 text-lg font-semibold text-slate-900">Vencimientos</h1>
+      <p className="mb-6 text-sm text-slate-500">
+        Cruce de responsabilidades tributarias × calendario {year} para tus empresas.
+      </p>
+      <DeadlinesView deadlines={deadlines} companies={(companies ?? []) as Company[]} />
+    </div>
+  );
+}

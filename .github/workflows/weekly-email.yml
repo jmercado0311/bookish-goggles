@@ -1,0 +1,16 @@
+name: Correo semanal de vencimientos
+
+on:
+  schedule:
+    # Todos los lunes 08:00 hora Colombia (13:00 UTC)
+    - cron: "0 13 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  send-weekly-email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al endpoint del correo semanal
+        run: |
+          curl -f -X GET "${{ secrets.APP_URL }}/api/cron/weekly-email" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
