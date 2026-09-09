@@ -76,6 +76,12 @@ export function DeadlinesView({
   }, [sinPresentar, presentadas, estadoFilter]);
 
   async function toggleEstado(d: CompanyDeadline) {
+    const pregunta = d.presentado
+      ? `¿Deshacer "presentada" de ${d.responsibility_name} (${d.company.razon_social}, ${d.period_label})? Volverá a aparecer en vencimientos.`
+      : `¿Confirmas que ya se presentó ${d.responsibility_name} de ${d.company.razon_social} (${d.period_label})? Dejará de aparecer en vencimientos.`;
+
+    if (!window.confirm(pregunta)) return;
+
     const key = deadlineKey(d);
     setPending((s) => new Set(s).add(key));
 

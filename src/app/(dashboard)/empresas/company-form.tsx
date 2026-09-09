@@ -30,8 +30,8 @@ export function CompanyForm({ company }: { company?: Company }) {
     nombre_comercial: company?.nombre_comercial ?? "",
     tipo_contribuyente: company?.tipo_contribuyente ?? "persona_natural",
     regimen: company?.regimen ?? "ordinario",
-    municipio: company?.municipio ?? "",
-    departamento: company?.departamento ?? "",
+    municipio: company?.municipio ?? "Fonseca",
+    departamento: company?.departamento ?? "La Guajira",
     iva_periodicidad: company?.iva_periodicidad ?? "bimestral",
   });
   const [error, setError] = useState<string | null>(null);
