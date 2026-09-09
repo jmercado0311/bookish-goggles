@@ -37,6 +37,11 @@ export function DeadlinesView({
   const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>("pendientes");
   const [pending, setPending] = useState<Set<string>>(new Set());
 
+  const sortedCompanies = useMemo(
+    () => [...companies].sort((a, b) => a.razon_social.localeCompare(b.razon_social, "es")),
+    [companies]
+  );
+
   const byCompany = useMemo(
     () => (companyFilter ? deadlines.filter((d) => d.company.id === companyFilter) : deadlines),
     [deadlines, companyFilter]
@@ -116,7 +121,7 @@ export function DeadlinesView({
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
           >
             <option value="">Todas las empresas</option>
-            {companies.map((c) => (
+            {sortedCompanies.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.razon_social}
               </option>

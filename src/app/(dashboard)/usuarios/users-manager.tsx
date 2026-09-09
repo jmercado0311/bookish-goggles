@@ -20,6 +20,9 @@ export function UsersManager({
   const [loading, setLoading] = useState(false);
 
   const colaboradores = profiles.filter((p) => p.role === "colaborador");
+  const sortedCompanies = [...companies].sort((a, b) =>
+    a.razon_social.localeCompare(b.razon_social, "es")
+  );
 
   function companiesFor(userId: string) {
     const ids = new Set(access.filter((a) => a.user_id === userId).map((a) => a.company_id));
@@ -131,7 +134,7 @@ export function UsersManager({
               </div>
               <p className="mb-2 text-xs font-medium text-slate-600">Empresas asignadas</p>
               <div className="flex flex-wrap gap-2">
-                {companies.map((company) => {
+                {sortedCompanies.map((company) => {
                   const granted = assignedIds.has(company.id);
                   return (
                     <button
