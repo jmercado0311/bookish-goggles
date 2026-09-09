@@ -57,6 +57,14 @@ export function DeadlinesView({
     () => sinPresentar.filter((d) => urgencyLevel(d.due_date) === "vencido").length,
     [sinPresentar]
   );
+  const urgentesCount = useMemo(
+    () => sinPresentar.filter((d) => urgencyLevel(d.due_date) === "urgente").length,
+    [sinPresentar]
+  );
+  const proximasCount = useMemo(
+    () => sinPresentar.filter((d) => urgencyLevel(d.due_date) === "proximo").length,
+    [sinPresentar]
+  );
 
   const estadoTabs: { value: EstadoFilter; label: string; count?: number }[] = [
     { value: "pendientes", label: "Pendientes" },
@@ -116,8 +124,53 @@ export function DeadlinesView({
     router.refresh();
   }
 
+  const summaryTiles: {
+    label: string;
+    count: number;
+    accent: string;
+    onClick: () => void;
+  }[] = [
+    {
+      label: "Vencidas",
+      count: vencidasCount,
+      accent: "border-red-200 bg-red-50 text-red-700",
+      onClick: () => setEstadoFilter("vencidas"),
+    },
+    {
+      label: "Urgentes (1-2 días)",
+      count: urgentesCount,
+      accent: "border-amber-200 bg-amber-50 text-amber-700",
+      onClick: () => setEstadoFilter("pendientes"),
+    },
+    {
+      label: "Próximas (≤4 días)",
+      count: proximasCount,
+      accent: "border-blue-200 bg-blue-50 text-blue-700",
+      onClick: () => setEstadoFilter("pendientes"),
+    },
+    {
+      label: "Presentadas",
+      count: presentadas.length,
+      accent: "border-green-200 bg-green-50 text-green-700",
+      onClick: () => setEstadoFilter("presentadas"),
+    },
+  ];
+
   return (
     <div>
+      <div className="mb-4 grid grid-cols-2 gap-3 print:hidden sm:grid-cols-4">
+        {summaryTiles.map((tile) => (
+          <button
+            key={tile.label}
+            onClick={tile.onClick}
+            className={`rounded-2xl border p-4 text-left transition hover:shadow-sm ${tile.accent}`}
+          >
+            <p className="text-2xl font-semibold tabular-nums">{tile.count}</p>
+            <p className="text-xs font-medium">{tile.label}</p>
+          </button>
+        ))}
+      </div>
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div className="flex flex-wrap items-center gap-3">
           <select
