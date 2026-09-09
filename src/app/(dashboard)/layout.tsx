@@ -46,6 +46,14 @@ export default async function DashboardLayout({
         </nav>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
+      <footer className="border-t border-slate-200 bg-white print:hidden">
+        <div className="mx-auto max-w-6xl px-4 py-5 text-center text-xs leading-relaxed text-slate-500">
+          <p className="font-semibold text-slate-700">Johan Mercado Frías</p>
+          <p>Contador público</p>
+          <p>Especialista en Sistemas de Calidad y Auditoría en Servicios de Salud</p>
+          <p>Especialista en Revisoría Fiscal y Auditoría Forense</p>
+        </div>
+      </footer>
     </div>
   );
 }
