@@ -37,11 +37,14 @@ export interface CompanyIca {
   fecha_puntual: string | null;
 }
 
+export type NitMatchMode = "last_digit" | "last_two_digits";
+
 export interface TaxCalendarEntry {
   id: string;
   year: number;
   responsibility_code: string;
   last_nit_digit: number;
+  match_mode: NitMatchMode;
   period_label: string;
   due_date: string;
 }

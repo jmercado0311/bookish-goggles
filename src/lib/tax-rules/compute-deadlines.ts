@@ -13,6 +13,16 @@ function lastDigit(nit: string): number {
   return Number(digits[digits.length - 1] ?? "0");
 }
 
+/**
+ * Últimos DOS dígitos del NIT como número (ej. "...531" -> 31). Lo usan
+ * responsabilidades como "Renta - Personas naturales", cuyo calendario DIAN
+ * agrupa por parejas de dígitos en vez de un solo dígito.
+ */
+function lastTwoDigits(nit: string): number {
+  const digits = nit.replace(/\D/g, "");
+  return Number(digits.slice(-2).padStart(2, "0"));
+}
+
 /** Próxima fecha (>= hoy) para una regla de día fijo mensual; si ya pasó este mes, usa el próximo. */
 function nextOccurrenceForDay(day: number, from: Date = new Date()): string {
   const candidate = new Date(from.getFullYear(), from.getMonth(), day);
@@ -37,12 +47,16 @@ export function computeCompanyDeadlines(input: {
 
   for (const company of companies) {
     const digit = lastDigit(company.nit);
+    const twoDigits = lastTwoDigits(company.nit);
     const responsibilities = responsibilitiesByCompany.get(company.id) ?? [];
 
     for (const resp of responsibilities) {
-      const matches = taxCalendar.filter(
-        (t) => t.year === year && t.responsibility_code === resp.code && t.last_nit_digit === digit
-      );
+      const matches = taxCalendar.filter((t) => {
+        if (t.year !== year || t.responsibility_code !== resp.code) return false;
+        return t.match_mode === "last_two_digits"
+          ? t.last_nit_digit === twoDigits
+          : t.last_nit_digit === digit;
+      });
       for (const m of matches) {
         deadlines.push({
           company,
