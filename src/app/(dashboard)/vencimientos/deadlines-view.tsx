@@ -21,7 +21,7 @@ const URGENCY_LABELS: Record<UrgencyLevel, string> = {
   normal: "",
 };
 
-type EstadoFilter = "pendientes" | "vencidas" | "todas" | "presentadas";
+type EstadoFilter = "pendientes" | "vencidas" | "urgentes" | "proximas" | "todas" | "presentadas";
 
 export function DeadlinesView({
   deadlines,
@@ -74,15 +74,26 @@ export function DeadlinesView({
   ];
 
   const filtered = useMemo(() => {
-    const base =
-      estadoFilter === "presentadas"
-        ? presentadas
-        : estadoFilter === "todas"
-          ? sinPresentar
-          : sinPresentar.filter((d) => {
-              const isVencido = urgencyLevel(d.due_date) === "vencido";
-              return estadoFilter === "vencidas" ? isVencido : !isVencido;
-            });
+    let base: CompanyDeadline[];
+    switch (estadoFilter) {
+      case "presentadas":
+        base = presentadas;
+        break;
+      case "todas":
+        base = sinPresentar;
+        break;
+      case "vencidas":
+        base = sinPresentar.filter((d) => urgencyLevel(d.due_date) === "vencido");
+        break;
+      case "urgentes":
+        base = sinPresentar.filter((d) => urgencyLevel(d.due_date) === "urgente");
+        break;
+      case "proximas":
+        base = sinPresentar.filter((d) => urgencyLevel(d.due_date) === "proximo");
+        break;
+      default:
+        base = sinPresentar.filter((d) => urgencyLevel(d.due_date) !== "vencido");
+    }
 
     // Siempre por fecha de vencimiento, sin agrupar por empresa — así se ve
     // de un vistazo qué es lo más próximo, sin importar de quién sea.
@@ -125,34 +136,39 @@ export function DeadlinesView({
   }
 
   const summaryTiles: {
+    value: EstadoFilter;
     label: string;
     count: number;
     accent: string;
-    onClick: () => void;
+    ring: string;
   }[] = [
     {
+      value: "vencidas",
       label: "Vencidas",
       count: vencidasCount,
       accent: "border-red-200 bg-red-50 text-red-700",
-      onClick: () => setEstadoFilter("vencidas"),
+      ring: "ring-red-400",
     },
     {
+      value: "urgentes",
       label: "Urgentes (1-2 días)",
       count: urgentesCount,
       accent: "border-amber-200 bg-amber-50 text-amber-700",
-      onClick: () => setEstadoFilter("pendientes"),
+      ring: "ring-amber-400",
     },
     {
+      value: "proximas",
       label: "Próximas (≤4 días)",
       count: proximasCount,
       accent: "border-blue-200 bg-blue-50 text-blue-700",
-      onClick: () => setEstadoFilter("pendientes"),
+      ring: "ring-blue-400",
     },
     {
+      value: "presentadas",
       label: "Presentadas",
       count: presentadas.length,
       accent: "border-green-200 bg-green-50 text-green-700",
-      onClick: () => setEstadoFilter("presentadas"),
+      ring: "ring-green-400",
     },
   ];
 
@@ -161,9 +177,11 @@ export function DeadlinesView({
       <div className="mb-4 grid grid-cols-2 gap-3 print:hidden sm:grid-cols-4">
         {summaryTiles.map((tile) => (
           <button
-            key={tile.label}
-            onClick={tile.onClick}
-            className={`rounded-2xl border p-4 text-left transition hover:shadow-sm ${tile.accent}`}
+            key={tile.value}
+            onClick={() => setEstadoFilter(tile.value)}
+            className={`rounded-2xl border p-4 text-left transition hover:shadow-sm ${tile.accent} ${
+              estadoFilter === tile.value ? `ring-2 ${tile.ring}` : ""
+            }`}
           >
             <p className="text-2xl font-semibold tabular-nums">{tile.count}</p>
             <p className="text-xs font-medium">{tile.label}</p>
@@ -299,9 +317,13 @@ export function DeadlinesView({
               ? "No hay vencimientos para mostrar. Verifica que hayas cargado responsabilidades y el calendario DIAN del año."
               : estadoFilter === "vencidas"
                 ? "¡Estás al día! No tienes nada vencido. 🎉"
-                : estadoFilter === "presentadas"
-                  ? "Todavía no has marcado ninguna declaración como presentada."
-                  : "No tienes nada pendiente por ahora."}
+                : estadoFilter === "urgentes"
+                  ? "No tienes nada urgente en este momento."
+                  : estadoFilter === "proximas"
+                    ? "No tienes nada próximo a vencer."
+                    : estadoFilter === "presentadas"
+                      ? "Todavía no has marcado ninguna declaración como presentada."
+                      : "No tienes nada pendiente por ahora."}
           </p>
         )}
       </div>
