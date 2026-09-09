@@ -74,6 +74,13 @@ export function computeCompanyDeadlines(input: {
             : esGranContribuyente && t.last_nit_digit === digit;
         }
 
+        // "48" (IVA) y "33" (INC, sigue las mismas fechas que el IVA de cada
+        // empresa): el calendario depende de si la empresa es bimestral o
+        // cuatrimestral, dato que se guarda en la ficha de la empresa.
+        if (resp.code === "48" || resp.code === "33") {
+          return t.periodicidad === company.iva_periodicidad && t.last_nit_digit === digit;
+        }
+
         return t.last_nit_digit === digit;
       });
       for (const m of matches) {

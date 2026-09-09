@@ -16,6 +16,11 @@ const REGIMENES = [
   { value: "especial", label: "Régimen especial" },
 ];
 
+const PERIODICIDADES_IVA = [
+  { value: "bimestral", label: "Bimestral" },
+  { value: "cuatrimestral", label: "Cuatrimestral" },
+];
+
 export function CompanyForm({ company }: { company?: Company }) {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -27,6 +32,7 @@ export function CompanyForm({ company }: { company?: Company }) {
     regimen: company?.regimen ?? "ordinario",
     municipio: company?.municipio ?? "",
     departamento: company?.departamento ?? "",
+    iva_periodicidad: company?.iva_periodicidad ?? "bimestral",
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -141,6 +147,27 @@ export function CompanyForm({ company }: { company?: Company }) {
             ))}
           </select>
         </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Periodicidad de IVA
+        </label>
+        <select
+          value={form.iva_periodicidad}
+          onChange={(e) => update("iva_periodicidad", e.target.value)}
+          className="w-full max-w-[220px] rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        >
+          {PERIODICIDADES_IVA.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-slate-500">
+          Depende de los ingresos del año anterior de la empresa. Solo importa si tiene la
+          responsabilidad 48 (IVA) o 33 (INC) — en cualquier otro caso no afecta nada.
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

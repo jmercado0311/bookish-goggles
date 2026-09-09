@@ -7,6 +7,8 @@ export interface Profile {
   created_at: string;
 }
 
+export type IvaPeriodicidad = "bimestral" | "cuatrimestral";
+
 export interface Company {
   id: string;
   nit: string;
@@ -17,6 +19,7 @@ export interface Company {
   regimen: string | null;
   municipio: string | null;
   departamento: string | null;
+  iva_periodicidad: IvaPeriodicidad;
   created_by: string | null;
   created_at: string;
 }
@@ -45,6 +48,8 @@ export interface TaxCalendarEntry {
   responsibility_code: string;
   last_nit_digit: number;
   match_mode: NitMatchMode;
+  /** Solo para responsabilidades 48 (IVA) y 33 (INC); null en el resto. */
+  periodicidad: IvaPeriodicidad | null;
   period_label: string;
   due_date: string;
 }

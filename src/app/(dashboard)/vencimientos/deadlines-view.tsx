@@ -48,11 +48,19 @@ export function DeadlinesView({
   );
 
   const filtered = useMemo(() => {
-    if (estadoFilter === "todas") return byCompany;
-    return byCompany.filter((d) => {
-      const isVencido = urgencyLevel(d.due_date) === "vencido";
-      return estadoFilter === "vencidas" ? isVencido : !isVencido;
-    });
+    const base =
+      estadoFilter === "todas"
+        ? byCompany
+        : byCompany.filter((d) => {
+            const isVencido = urgencyLevel(d.due_date) === "vencido";
+            return estadoFilter === "vencidas" ? isVencido : !isVencido;
+          });
+
+    // Siempre por fecha de vencimiento, sin agrupar por empresa — así se ve
+    // de un vistazo qué es lo más próximo, sin importar de quién sea.
+    return [...base].sort(
+      (a, b) => a.due_date.localeCompare(b.due_date) || a.company.razon_social.localeCompare(b.company.razon_social)
+    );
   }, [byCompany, estadoFilter]);
 
   return (
