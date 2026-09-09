@@ -50,12 +50,23 @@ export function computeCompanyDeadlines(input: {
     const twoDigits = lastTwoDigits(company.nit);
     const responsibilities = responsibilitiesByCompany.get(company.id) ?? [];
 
+    const esPersonaNatural = company.tipo_contribuyente === "persona_natural";
+
     for (const resp of responsibilities) {
       const matches = taxCalendar.filter((t) => {
         if (t.year !== year || t.responsibility_code !== resp.code) return false;
-        return t.match_mode === "last_two_digits"
-          ? t.last_nit_digit === twoDigits
-          : t.last_nit_digit === digit;
+
+        if (t.match_mode === "last_two_digits") {
+          // Renta - Personas naturales: solo aplica a empresas persona natural.
+          return esPersonaNatural && t.last_nit_digit === twoDigits;
+        }
+
+        // La responsabilidad "05" (Renta) también cubre el calendario de
+        // Personas jurídicas por dígito único; no debe mezclarse con el de
+        // personas naturales aunque compartan el mismo código de RUT.
+        if (resp.code === "05" && esPersonaNatural) return false;
+
+        return t.last_nit_digit === digit;
       });
       for (const m of matches) {
         deadlines.push({
