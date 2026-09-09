@@ -26,8 +26,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Falta correo o nombre." }, { status: 400 });
   }
 
+  const redirectTo = `${new URL(request.url).origin}/actualizar-contrasena`;
+
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { full_name, role: "colaborador" },
+    redirectTo,
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
