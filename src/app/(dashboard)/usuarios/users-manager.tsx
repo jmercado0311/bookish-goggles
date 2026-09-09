@@ -21,7 +21,7 @@ export function UsersManager({
 
   const colaboradores = profiles.filter((p) => p.role === "colaborador");
   const sortedCompanies = [...companies].sort((a, b) =>
-    a.razon_social.localeCompare(b.razon_social, "es")
+    a.razon_social.trim().localeCompare(b.razon_social.trim(), "es")
   );
 
   function companiesFor(userId: string) {

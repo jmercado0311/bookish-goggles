@@ -5,6 +5,7 @@ import { CompanyForm } from "../company-form";
 import { ResponsibilitiesEditor } from "./responsibilities-editor";
 import { IcaEditor } from "./ica-editor";
 import { CustomObligationsEditor } from "./custom-obligations-editor";
+import { DeleteCompanyButton } from "./delete-company-button";
 
 export default async function EmpresaDetailPage({
   params,
@@ -64,6 +65,13 @@ export default async function EmpresaDetailPage({
         obligations={(customObligations ?? []) as CustomObligation[]}
         readOnly={!isAdmin}
       />
+
+      {isAdmin && (
+        <DeleteCompanyButton
+          companyId={id}
+          razonSocial={(company as Company).razon_social}
+        />
+      )}
     </div>
   );
 }

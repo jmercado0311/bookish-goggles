@@ -38,7 +38,10 @@ export function DeadlinesView({
   const [pending, setPending] = useState<Set<string>>(new Set());
 
   const sortedCompanies = useMemo(
-    () => [...companies].sort((a, b) => a.razon_social.localeCompare(b.razon_social, "es")),
+    () =>
+      [...companies].sort((a, b) =>
+        a.razon_social.trim().localeCompare(b.razon_social.trim(), "es")
+      ),
     [companies]
   );
 
@@ -76,7 +79,9 @@ export function DeadlinesView({
     // Siempre por fecha de vencimiento, sin agrupar por empresa — así se ve
     // de un vistazo qué es lo más próximo, sin importar de quién sea.
     return [...base].sort(
-      (a, b) => a.due_date.localeCompare(b.due_date) || a.company.razon_social.localeCompare(b.company.razon_social)
+      (a, b) =>
+        a.due_date.localeCompare(b.due_date) ||
+        a.company.razon_social.trim().localeCompare(b.company.razon_social.trim())
     );
   }, [sinPresentar, presentadas, estadoFilter]);
 

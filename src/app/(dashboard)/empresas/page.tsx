@@ -12,7 +12,7 @@ export default async function EmpresasPage() {
     .order("razon_social");
 
   const list = ((companies ?? []) as Company[]).sort((a, b) =>
-    a.razon_social.localeCompare(b.razon_social, "es")
+    a.razon_social.trim().localeCompare(b.razon_social.trim(), "es")
   );
 
   return (
