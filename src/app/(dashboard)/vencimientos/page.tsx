@@ -13,6 +13,10 @@ import { DeadlinesView } from "./deadlines-view";
 export default async function VencimientosPage() {
   const { supabase, profile } = await requireUser();
   const year = new Date().getFullYear();
+  // Año actual + el siguiente: los vencimientos "hasta enero" del año que
+  // viene ya quedan visibles sin esperar el cambio de año, y sin necesidad
+  // de borrar el calendario del año en curso cuando llegue el próximo.
+  const years = [year, year + 1];
 
   const [
     { data: companies },
@@ -26,7 +30,7 @@ export default async function VencimientosPage() {
     supabase.from("company_responsibilities").select("*"),
     supabase.from("company_ica").select("*"),
     supabase.from("custom_obligations").select("*"),
-    supabase.from("tax_calendar").select("*").eq("year", year),
+    supabase.from("tax_calendar").select("*").in("year", years),
     supabase.from("submitted_declarations").select("*"),
   ]);
 
@@ -52,14 +56,14 @@ export default async function VencimientosPage() {
     customObligationsByCompany: customByCompany,
     taxCalendar: (taxCalendar ?? []) as TaxCalendarEntry[],
     submittedDeclarations: (submitted ?? []) as SubmittedDeclaration[],
-    year,
+    years,
   });
 
   return (
     <div>
       <h1 className="mb-1 text-lg font-semibold text-slate-900">Vencimientos</h1>
       <p className="mb-6 text-sm text-slate-500">
-        Cruce de responsabilidades tributarias × calendario {year} para tus empresas.
+        Cruce de responsabilidades tributarias × calendario {year}–{year + 1} para tus empresas.
       </p>
       <DeadlinesView
         deadlines={deadlines}

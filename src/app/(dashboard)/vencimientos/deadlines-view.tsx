@@ -240,10 +240,10 @@ export function DeadlinesView({
             {byCompany.length === 0
               ? "No hay vencimientos para mostrar. Verifica que hayas cargado responsabilidades y el calendario DIAN del año."
               : estadoFilter === "vencidas"
-                ? "No hay vencimientos vencidos. 🎉"
+                ? "¡Estás al día! No tienes nada vencido. 🎉"
                 : estadoFilter === "presentadas"
                   ? "Todavía no has marcado ninguna declaración como presentada."
-                  : "No hay vencimientos pendientes por vencer."}
+                  : "No tienes nada pendiente por ahora."}
           </p>
         )}
       </div>

@@ -41,7 +41,14 @@ export function computeCompanyDeadlines(input: {
   customObligationsByCompany: Map<string, CustomObligation[]>;
   taxCalendar: TaxCalendarEntry[];
   submittedDeclarations?: SubmittedDeclaration[];
-  year: number;
+  /**
+   * Años de tax_calendar a tener en cuenta. Se recomienda pasar el año en
+   * curso Y el siguiente: algunos vencimientos de diciembre (ej. Retención
+   * o IVA del último bimestre) caen "hasta" enero del año próximo y se
+   * guardan con ese año, así que hay que poder verlos sin esperar a que
+   * cambie el año del calendario ni borrar el año anterior.
+   */
+  years: number[];
 }): CompanyDeadline[] {
   const {
     companies,
@@ -50,8 +57,9 @@ export function computeCompanyDeadlines(input: {
     customObligationsByCompany,
     taxCalendar,
     submittedDeclarations = [],
-    year,
+    years,
   } = input;
+  const yearsSet = new Set(years);
 
   const submittedByKey = new Map<string, SubmittedDeclaration>();
   for (const s of submittedDeclarations) {
@@ -83,7 +91,7 @@ export function computeCompanyDeadlines(input: {
 
     for (const resp of responsibilities) {
       const matches = taxCalendar.filter((t) => {
-        if (t.year !== year || t.responsibility_code !== resp.code) return false;
+        if (!yearsSet.has(t.year) || t.responsibility_code !== resp.code) return false;
 
         // "05" (Renta): comparte código de RUT entre personas naturales (rango
         // de 2 dígitos) y jurídicas (1 dígito), con calendarios distintos.

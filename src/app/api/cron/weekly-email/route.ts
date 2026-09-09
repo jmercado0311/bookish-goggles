@@ -24,6 +24,7 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
   const year = new Date().getFullYear();
+  const years = [year, year + 1];
   const monday = currentMonday();
 
   const [
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
     admin.from("company_responsibilities").select("*"),
     admin.from("company_ica").select("*"),
     admin.from("custom_obligations").select("*"),
-    admin.from("tax_calendar").select("*").eq("year", year),
+    admin.from("tax_calendar").select("*").in("year", years),
     admin.from("user_company_access").select("*"),
     admin.from("submitted_declarations").select("*"),
   ]);
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
     customObligationsByCompany: customByCompany,
     taxCalendar: (taxCalendar ?? []) as TaxCalendarEntry[],
     submittedDeclarations: (submitted ?? []) as SubmittedDeclaration[],
-    year,
+    years,
   });
   const weekDeadlines = allDeadlines.filter(
     (d) => isWithinWeek(d.due_date, monday) && !d.presentado
