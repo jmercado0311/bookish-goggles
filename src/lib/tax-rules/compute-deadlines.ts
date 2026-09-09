@@ -4,8 +4,10 @@ import type {
   CompanyIca,
   CompanyResponsibility,
   CustomObligation,
+  SubmittedDeclaration,
   TaxCalendarEntry,
 } from "@/lib/types";
+import { deadlineKey } from "@/lib/types";
 import { responsibilityName } from "./responsibilities";
 
 function lastDigit(nit: string): number {
@@ -38,10 +40,36 @@ export function computeCompanyDeadlines(input: {
   icaByCompany: Map<string, CompanyIca>;
   customObligationsByCompany: Map<string, CustomObligation[]>;
   taxCalendar: TaxCalendarEntry[];
+  submittedDeclarations?: SubmittedDeclaration[];
   year: number;
 }): CompanyDeadline[] {
-  const { companies, responsibilitiesByCompany, icaByCompany, customObligationsByCompany, taxCalendar, year } =
-    input;
+  const {
+    companies,
+    responsibilitiesByCompany,
+    icaByCompany,
+    customObligationsByCompany,
+    taxCalendar,
+    submittedDeclarations = [],
+    year,
+  } = input;
+
+  const submittedByKey = new Map<string, SubmittedDeclaration>();
+  for (const s of submittedDeclarations) {
+    submittedByKey.set(
+      deadlineKey({
+        company: { id: s.company_id },
+        responsibility_code: s.responsibility_code,
+        period_label: s.period_label,
+        due_date: s.due_date,
+      }),
+      s
+    );
+  }
+
+  function withEstado(d: Omit<CompanyDeadline, "presentado" | "presentado_en">): CompanyDeadline {
+    const submitted = submittedByKey.get(deadlineKey(d));
+    return { ...d, presentado: !!submitted, presentado_en: submitted?.submitted_at ?? null };
+  }
 
   const deadlines: CompanyDeadline[] = [];
 
@@ -84,14 +112,16 @@ export function computeCompanyDeadlines(input: {
         return t.last_nit_digit === digit;
       });
       for (const m of matches) {
-        deadlines.push({
-          company,
-          responsibility_code: resp.code,
-          responsibility_name: responsibilityName(resp.code),
-          period_label: m.period_label,
-          due_date: m.due_date,
-          source: "dian",
-        });
+        deadlines.push(
+          withEstado({
+            company,
+            responsibility_code: resp.code,
+            responsibility_name: responsibilityName(resp.code),
+            period_label: m.period_label,
+            due_date: m.due_date,
+            source: "dian",
+          })
+        );
       }
     }
 
@@ -99,14 +129,16 @@ export function computeCompanyDeadlines(input: {
     if (ica) {
       const dueDate = ica.fecha_puntual ?? (ica.regla_dia_mes ? nextOccurrenceForDay(ica.regla_dia_mes) : null);
       if (dueDate) {
-        deadlines.push({
-          company,
-          responsibility_code: "ICA",
-          responsibility_name: `ICA (${ica.municipio})`,
-          period_label: ica.periodicidad,
-          due_date: dueDate,
-          source: "ica",
-        });
+        deadlines.push(
+          withEstado({
+            company,
+            responsibility_code: "ICA",
+            responsibility_name: `ICA (${ica.municipio})`,
+            period_label: ica.periodicidad,
+            due_date: dueDate,
+            source: "ica",
+          })
+        );
       }
     }
 
@@ -114,14 +146,16 @@ export function computeCompanyDeadlines(input: {
     for (const c of customs) {
       const dueDate = c.fecha_puntual ?? (c.regla_dia_mes ? nextOccurrenceForDay(c.regla_dia_mes) : null);
       if (dueDate) {
-        deadlines.push({
-          company,
-          responsibility_code: c.tipo,
-          responsibility_name: c.nombre,
-          period_label: c.regla_dia_mes ? `día ${c.regla_dia_mes} de cada mes` : "fecha puntual",
-          due_date: dueDate,
-          source: "custom",
-        });
+        deadlines.push(
+          withEstado({
+            company,
+            responsibility_code: c.tipo,
+            responsibility_name: c.nombre,
+            period_label: c.regla_dia_mes ? `día ${c.regla_dia_mes} de cada mes` : "fecha puntual",
+            due_date: dueDate,
+            source: "custom",
+          })
+        );
       }
     }
   }

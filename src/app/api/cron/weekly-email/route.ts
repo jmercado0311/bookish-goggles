@@ -11,6 +11,7 @@ import type {
   CompanyResponsibility,
   CustomObligation,
   Profile,
+  SubmittedDeclaration,
   TaxCalendarEntry,
   UserCompanyAccess,
 } from "@/lib/types";
@@ -33,6 +34,7 @@ export async function GET(request: Request) {
     { data: customObligations },
     { data: taxCalendar },
     { data: access },
+    { data: submitted },
   ] = await Promise.all([
     admin.from("profiles").select("*"),
     admin.from("companies").select("*"),
@@ -41,6 +43,7 @@ export async function GET(request: Request) {
     admin.from("custom_obligations").select("*"),
     admin.from("tax_calendar").select("*").eq("year", year),
     admin.from("user_company_access").select("*"),
+    admin.from("submitted_declarations").select("*"),
   ]);
 
   const responsibilitiesByCompany = new Map<string, CompanyResponsibility[]>();
@@ -63,9 +66,12 @@ export async function GET(request: Request) {
     icaByCompany,
     customObligationsByCompany: customByCompany,
     taxCalendar: (taxCalendar ?? []) as TaxCalendarEntry[],
+    submittedDeclarations: (submitted ?? []) as SubmittedDeclaration[],
     year,
   });
-  const weekDeadlines = allDeadlines.filter((d) => isWithinWeek(d.due_date, monday));
+  const weekDeadlines = allDeadlines.filter(
+    (d) => isWithinWeek(d.due_date, monday) && !d.presentado
+  );
 
   const accessList = (access ?? []) as UserCompanyAccess[];
   const results: { user: string; sent: boolean; error?: string }[] = [];

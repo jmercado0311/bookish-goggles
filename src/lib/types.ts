@@ -84,6 +84,16 @@ export interface CalendarUpload {
   confirmed_at: string | null;
 }
 
+export interface SubmittedDeclaration {
+  id: string;
+  company_id: string;
+  responsibility_code: string;
+  period_label: string;
+  due_date: string;
+  submitted_at: string;
+  submitted_by: string | null;
+}
+
 /** Un vencimiento ya resuelto para una empresa concreta (vista principal). */
 export interface CompanyDeadline {
   company: Company;
@@ -92,4 +102,17 @@ export interface CompanyDeadline {
   period_label: string;
   due_date: string;
   source: "dian" | "ica" | "custom";
+  /** true si alguien ya marcó esta declaración puntual como presentada. */
+  presentado: boolean;
+  presentado_en: string | null;
+}
+
+/** Clave única de un vencimiento puntual, usada para cruzar contra submitted_declarations. */
+export function deadlineKey(d: {
+  company: { id: string };
+  responsibility_code: string;
+  period_label: string;
+  due_date: string;
+}): string {
+  return `${d.company.id}|${d.responsibility_code}|${d.period_label}|${d.due_date}`;
 }

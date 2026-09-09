@@ -4,13 +4,14 @@ import type {
   CompanyIca,
   CompanyResponsibility,
   CustomObligation,
+  SubmittedDeclaration,
   TaxCalendarEntry,
 } from "@/lib/types";
 import { computeCompanyDeadlines } from "@/lib/tax-rules/compute-deadlines";
 import { DeadlinesView } from "./deadlines-view";
 
 export default async function VencimientosPage() {
-  const { supabase } = await requireUser();
+  const { supabase, profile } = await requireUser();
   const year = new Date().getFullYear();
 
   const [
@@ -19,12 +20,14 @@ export default async function VencimientosPage() {
     { data: icas },
     { data: customObligations },
     { data: taxCalendar },
+    { data: submitted },
   ] = await Promise.all([
     supabase.from("companies").select("*").order("razon_social"),
     supabase.from("company_responsibilities").select("*"),
     supabase.from("company_ica").select("*"),
     supabase.from("custom_obligations").select("*"),
     supabase.from("tax_calendar").select("*").eq("year", year),
+    supabase.from("submitted_declarations").select("*"),
   ]);
 
   const responsibilitiesByCompany = new Map<string, CompanyResponsibility[]>();
@@ -48,6 +51,7 @@ export default async function VencimientosPage() {
     icaByCompany,
     customObligationsByCompany: customByCompany,
     taxCalendar: (taxCalendar ?? []) as TaxCalendarEntry[],
+    submittedDeclarations: (submitted ?? []) as SubmittedDeclaration[],
     year,
   });
 
@@ -57,7 +61,11 @@ export default async function VencimientosPage() {
       <p className="mb-6 text-sm text-slate-500">
         Cruce de responsabilidades tributarias × calendario {year} para tus empresas.
       </p>
-      <DeadlinesView deadlines={deadlines} companies={(companies ?? []) as Company[]} />
+      <DeadlinesView
+        deadlines={deadlines}
+        companies={(companies ?? []) as Company[]}
+        canMarkPresentada={profile.role === "admin"}
+      />
     </div>
   );
 }

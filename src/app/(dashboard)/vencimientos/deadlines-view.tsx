@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Company, CompanyDeadline } from "@/lib/types";
+import { deadlineKey } from "@/lib/types";
 import { urgencyLevel, type UrgencyLevel } from "@/lib/tax-rules/urgency";
 import { exportDeadlinesToExcel } from "@/lib/export/excel";
 
@@ -19,49 +21,84 @@ const URGENCY_LABELS: Record<UrgencyLevel, string> = {
   normal: "",
 };
 
-type EstadoFilter = "pendientes" | "vencidas" | "todas";
-
-const ESTADO_TABS: { value: EstadoFilter; label: string }[] = [
-  { value: "pendientes", label: "Pendientes" },
-  { value: "vencidas", label: "Vencidas" },
-  { value: "todas", label: "Todas" },
-];
+type EstadoFilter = "pendientes" | "vencidas" | "todas" | "presentadas";
 
 export function DeadlinesView({
   deadlines,
   companies,
+  canMarkPresentada,
 }: {
   deadlines: CompanyDeadline[];
   companies: Company[];
+  canMarkPresentada: boolean;
 }) {
+  const router = useRouter();
   const [companyFilter, setCompanyFilter] = useState("");
   const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>("pendientes");
+  const [pending, setPending] = useState<Set<string>>(new Set());
 
   const byCompany = useMemo(
     () => (companyFilter ? deadlines.filter((d) => d.company.id === companyFilter) : deadlines),
     [deadlines, companyFilter]
   );
 
+  const sinPresentar = useMemo(() => byCompany.filter((d) => !d.presentado), [byCompany]);
+  const presentadas = useMemo(() => byCompany.filter((d) => d.presentado), [byCompany]);
+
   const vencidasCount = useMemo(
-    () => byCompany.filter((d) => urgencyLevel(d.due_date) === "vencido").length,
-    [byCompany]
+    () => sinPresentar.filter((d) => urgencyLevel(d.due_date) === "vencido").length,
+    [sinPresentar]
   );
+
+  const estadoTabs: { value: EstadoFilter; label: string; count?: number }[] = [
+    { value: "pendientes", label: "Pendientes" },
+    { value: "vencidas", label: "Vencidas", count: vencidasCount },
+    { value: "todas", label: "Todas" },
+    { value: "presentadas", label: "Presentadas", count: presentadas.length },
+  ];
 
   const filtered = useMemo(() => {
     const base =
-      estadoFilter === "todas"
-        ? byCompany
-        : byCompany.filter((d) => {
-            const isVencido = urgencyLevel(d.due_date) === "vencido";
-            return estadoFilter === "vencidas" ? isVencido : !isVencido;
-          });
+      estadoFilter === "presentadas"
+        ? presentadas
+        : estadoFilter === "todas"
+          ? sinPresentar
+          : sinPresentar.filter((d) => {
+              const isVencido = urgencyLevel(d.due_date) === "vencido";
+              return estadoFilter === "vencidas" ? isVencido : !isVencido;
+            });
 
     // Siempre por fecha de vencimiento, sin agrupar por empresa — así se ve
     // de un vistazo qué es lo más próximo, sin importar de quién sea.
     return [...base].sort(
       (a, b) => a.due_date.localeCompare(b.due_date) || a.company.razon_social.localeCompare(b.company.razon_social)
     );
-  }, [byCompany, estadoFilter]);
+  }, [sinPresentar, presentadas, estadoFilter]);
+
+  async function toggleEstado(d: CompanyDeadline) {
+    const key = deadlineKey(d);
+    setPending((s) => new Set(s).add(key));
+
+    const payload = {
+      company_id: d.company.id,
+      responsibility_code: d.responsibility_code,
+      period_label: d.period_label,
+      due_date: d.due_date,
+    };
+
+    await fetch("/api/declarations", {
+      method: d.presentado ? "DELETE" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    setPending((s) => {
+      const next = new Set(s);
+      next.delete(key);
+      return next;
+    });
+    router.refresh();
+  }
 
   return (
     <div>
@@ -80,8 +117,8 @@ export function DeadlinesView({
             ))}
           </select>
 
-          <div className="flex rounded-lg border border-slate-300 p-0.5 text-sm">
-            {ESTADO_TABS.map((tab) => (
+          <div className="flex flex-wrap rounded-lg border border-slate-300 p-0.5 text-sm">
+            {estadoTabs.map((tab) => (
               <button
                 key={tab.value}
                 onClick={() => setEstadoFilter(tab.value)}
@@ -92,9 +129,14 @@ export function DeadlinesView({
                 }`}
               >
                 {tab.label}
-                {tab.value === "vencidas" && vencidasCount > 0 && (
+                {tab.value === "vencidas" && !!tab.count && (
                   <span className="ml-1.5 rounded-full bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">
-                    {vencidasCount}
+                    {tab.count}
+                  </span>
+                )}
+                {tab.value === "presentadas" && !!tab.count && (
+                  <span className="ml-1.5 rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700">
+                    {tab.count}
                   </span>
                 )}
               </button>
@@ -128,13 +170,16 @@ export function DeadlinesView({
               <th className="px-4 py-3">Periodo</th>
               <th className="px-4 py-3">Vence</th>
               <th className="px-4 py-3">Estado</th>
+              {canMarkPresentada && <th className="px-4 py-3 print:hidden"></th>}
             </tr>
           </thead>
           <tbody>
-            {filtered.map((d, i) => {
+            {filtered.map((d) => {
               const level = urgencyLevel(d.due_date);
+              const key = deadlineKey(d);
+              const isPending = pending.has(key);
               return (
-                <tr key={i} className="border-b border-slate-100">
+                <tr key={key} className="border-b border-slate-100">
                   <td className="px-4 py-3 font-medium text-slate-900">
                     {d.company.razon_social}
                   </td>
@@ -145,14 +190,35 @@ export function DeadlinesView({
                     {new Date(d.due_date + "T00:00:00").toLocaleDateString("es-CO")}
                   </td>
                   <td className="px-4 py-3">
-                    {URGENCY_LABELS[level] && (
-                      <span
-                        className={`rounded-full border px-2 py-0.5 text-xs font-medium ${URGENCY_STYLES[level]}`}
-                      >
-                        {URGENCY_LABELS[level]}
+                    {d.presentado ? (
+                      <span className="rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                        Presentada
                       </span>
+                    ) : (
+                      URGENCY_LABELS[level] && (
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-xs font-medium ${URGENCY_STYLES[level]}`}
+                        >
+                          {URGENCY_LABELS[level]}
+                        </span>
+                      )
                     )}
                   </td>
+                  {canMarkPresentada && (
+                    <td className="px-4 py-3 text-right print:hidden">
+                      <button
+                        onClick={() => toggleEstado(d)}
+                        disabled={isPending}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
+                          d.presentado
+                            ? "border-slate-300 text-slate-600 hover:bg-slate-50"
+                            : "border-green-300 text-green-700 hover:bg-green-50"
+                        }`}
+                      >
+                        {isPending ? "..." : d.presentado ? "Deshacer" : "Marcar presentada"}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -164,7 +230,9 @@ export function DeadlinesView({
               ? "No hay vencimientos para mostrar. Verifica que hayas cargado responsabilidades y el calendario DIAN del año."
               : estadoFilter === "vencidas"
                 ? "No hay vencimientos vencidos. 🎉"
-                : "No hay vencimientos pendientes por vencer."}
+                : estadoFilter === "presentadas"
+                  ? "Todavía no has marcado ninguna declaración como presentada."
+                  : "No hay vencimientos pendientes por vencer."}
           </p>
         )}
       </div>
