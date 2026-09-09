@@ -51,20 +51,28 @@ export function computeCompanyDeadlines(input: {
     const responsibilities = responsibilitiesByCompany.get(company.id) ?? [];
 
     const esPersonaNatural = company.tipo_contribuyente === "persona_natural";
+    const esGranContribuyente = responsibilities.some((r) => r.code === "10");
 
     for (const resp of responsibilities) {
       const matches = taxCalendar.filter((t) => {
         if (t.year !== year || t.responsibility_code !== resp.code) return false;
 
-        if (t.match_mode === "last_two_digits") {
-          // Renta - Personas naturales: solo aplica a empresas persona natural.
-          return esPersonaNatural && t.last_nit_digit === twoDigits;
+        // "05" (Renta): comparte código de RUT entre personas naturales (rango
+        // de 2 dígitos) y jurídicas (1 dígito), con calendarios distintos.
+        if (resp.code === "05") {
+          return t.match_mode === "last_two_digits"
+            ? esPersonaNatural && t.last_nit_digit === twoDigits
+            : !esPersonaNatural && t.last_nit_digit === digit;
         }
 
-        // La responsabilidad "05" (Renta) también cubre el calendario de
-        // Personas jurídicas por dígito único; no debe mezclarse con el de
-        // personas naturales aunque compartan el mismo código de RUT.
-        if (resp.code === "05" && esPersonaNatural) return false;
+        // "14" (Informante de exógena): los grandes contribuyentes tienen su
+        // propio calendario de 1 dígito; el resto de empresas (naturales y
+        // jurídicas juntas) usa rangos de 2 dígitos.
+        if (resp.code === "14") {
+          return t.match_mode === "last_two_digits"
+            ? !esGranContribuyente && t.last_nit_digit === twoDigits
+            : esGranContribuyente && t.last_nit_digit === digit;
+        }
 
         return t.last_nit_digit === digit;
       });
