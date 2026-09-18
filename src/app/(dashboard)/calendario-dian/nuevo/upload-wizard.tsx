@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { extractPdfItems } from "@/lib/pdf-parser/extract-text";
 import { parseCandidateEntries } from "@/lib/pdf-parser/parse-dian-calendar";
 import { RESPONSIBILITIES_WITH_DEADLINES, responsibilityName } from "@/lib/tax-rules/responsibilities";
+import type { NitMatchMode } from "@/lib/types";
 
 interface ReviewRow {
   id: string;
   responsibility_code: string;
   last_nit_digit: number;
+  match_mode: NitMatchMode;
   period_label: string;
   due_date: string;
 }
@@ -20,6 +22,8 @@ export function UploadWizard() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<ReviewRow[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkResponsibility, setBulkResponsibility] = useState("");
   const [status, setStatus] = useState<"idle" | "extrayendo" | "revision" | "guardando">(
     "idle"
   );
@@ -37,14 +41,16 @@ export function UploadWizard() {
           id: `${i}`,
           responsibility_code: "",
           last_nit_digit: c.last_nit_digit,
+          match_mode: c.match_mode,
           period_label: c.period_label,
           due_date: c.due_date,
         }))
       );
+      setSelected(new Set());
       setStatus("revision");
       if (candidates.length === 0) {
         setError(
-          "No se detectaron filas automáticamente. Puedes agregarlas manualmente abajo."
+          "No se detectaron filas automáticamente. Puedes agregarlas manualmente abajo, o mandarle una captura del PDF a Claude para que te ayude."
         );
       }
     } catch {
@@ -60,6 +66,11 @@ export function UploadWizard() {
 
   function removeRow(id: string) {
     setRows((rs) => rs.filter((r) => r.id !== id));
+    setSelected((s) => {
+      const next = new Set(s);
+      next.delete(id);
+      return next;
+    });
   }
 
   function addEmptyRow() {
@@ -69,11 +80,60 @@ export function UploadWizard() {
         id: crypto.randomUUID(),
         responsibility_code: "",
         last_nit_digit: 0,
+        match_mode: "last_digit",
         period_label: "",
         due_date: "",
       },
     ]);
   }
+
+  function toggleSelected(id: string) {
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectByPeriod(period_label: string, match_mode: NitMatchMode) {
+    setSelected((s) => {
+      const next = new Set(s);
+      for (const r of rows) {
+        if (r.period_label === period_label && r.match_mode === match_mode) next.add(r.id);
+      }
+      return next;
+    });
+  }
+
+  function applyBulkResponsibility() {
+    if (!bulkResponsibility || selected.size === 0) return;
+    setRows((rs) =>
+      rs.map((r) => (selected.has(r.id) ? { ...r, responsibility_code: bulkResponsibility } : r))
+    );
+    setSelected(new Set());
+    setBulkResponsibility("");
+  }
+
+  // Filas consecutivas que comparten periodo + modo suelen venir de la misma
+  // cuadrícula del PDF (ej. las 10 columnas de "Retención en la fuente -
+  // Febrero 2026") — se ofrece un atajo para seleccionarlas todas juntas.
+  const periodGroups = useMemo(() => {
+    const seen = new Set<string>();
+    const groups: { key: string; period_label: string; match_mode: NitMatchMode; count: number }[] = [];
+    for (const r of rows) {
+      const key = `${r.period_label}|${r.match_mode}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      groups.push({
+        key,
+        period_label: r.period_label,
+        match_mode: r.match_mode,
+        count: rows.filter((x) => x.period_label === r.period_label && x.match_mode === r.match_mode).length,
+      });
+    }
+    return groups;
+  }, [rows]);
 
   async function handleConfirm() {
     setError(null);
@@ -101,12 +161,15 @@ export function UploadWizard() {
       body: JSON.stringify({
         year,
         file_path: filePath,
-        entries: rows.map(({ responsibility_code, last_nit_digit, period_label, due_date }) => ({
-          responsibility_code,
-          last_nit_digit,
-          period_label,
-          due_date,
-        })),
+        entries: rows.map(
+          ({ responsibility_code, last_nit_digit, match_mode, period_label, due_date }) => ({
+            responsibility_code,
+            last_nit_digit,
+            match_mode,
+            period_label,
+            due_date,
+          })
+        ),
       }),
     });
 
@@ -160,9 +223,9 @@ export function UploadWizard() {
 
       {(status === "revision" || status === "guardando") && (
         <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-slate-900">
-              Revisa y corrige antes de confirmar
+              Revisa y corrige antes de confirmar ({rows.length} filas)
             </h2>
             <button
               onClick={addEmptyRow}
@@ -172,12 +235,69 @@ export function UploadWizard() {
             </button>
           </div>
 
+          {rows.length > 0 && (
+            <div className="mb-4 space-y-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
+              <p className="text-xs text-blue-900">
+                Cada fecha detectada automáticamente todavía necesita que le digas a cuál
+                responsabilidad pertenece (el PDF no lo dice de forma que el programa lo pueda
+                adivinar solo). Para no hacerlo fila por fila: haz clic en <strong>&quot;Seleccionar&quot;</strong>{" "}
+                junto al grupo que reconozcas en el PDF, elige la responsabilidad abajo, y
+                aplícala a todas esas filas de una vez.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {periodGroups.map((g) => (
+                  <button
+                    key={g.key}
+                    onClick={() => selectByPeriod(g.period_label, g.match_mode)}
+                    className="rounded-full border border-blue-300 bg-white px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                  >
+                    Seleccionar &quot;{g.period_label}&quot; ({g.count})
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 border-t border-blue-200 pt-3">
+                <span className="text-xs font-medium text-blue-900">
+                  {selected.size} fila(s) seleccionada(s) →
+                </span>
+                <select
+                  value={bulkResponsibility}
+                  onChange={(e) => setBulkResponsibility(e.target.value)}
+                  className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                >
+                  <option value="">Asignar responsabilidad...</option>
+                  {RESPONSIBILITIES_WITH_DEADLINES.map((code) => (
+                    <option key={code} value={code}>
+                      {code} — {responsibilityName(code)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={applyBulkResponsibility}
+                  disabled={!bulkResponsibility || selected.size === 0}
+                  className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  Aplicar a seleccionadas
+                </button>
+                {selected.size > 0 && (
+                  <button
+                    onClick={() => setSelected(new Set())}
+                    className="text-xs font-medium text-slate-500 hover:underline"
+                  >
+                    Quitar selección
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs text-slate-500">
+                  <th className="py-2 pr-2"></th>
                   <th className="py-2 pr-2">Responsabilidad</th>
-                  <th className="py-2 pr-2">Último dígito NIT</th>
+                  <th className="py-2 pr-2">Modo</th>
+                  <th className="py-2 pr-2">Último dígito / rango</th>
                   <th className="py-2 pr-2">Periodo</th>
                   <th className="py-2 pr-2">Fecha vencimiento</th>
                   <th className="py-2"></th>
@@ -185,7 +305,19 @@ export function UploadWizard() {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-100">
+                  <tr
+                    key={r.id}
+                    className={`border-b border-slate-100 ${
+                      selected.has(r.id) ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    <td className="py-2 pr-2">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(r.id)}
+                        onChange={() => toggleSelected(r.id)}
+                      />
+                    </td>
                     <td className="py-2 pr-2">
                       <select
                         value={r.responsibility_code}
@@ -201,10 +333,22 @@ export function UploadWizard() {
                       </select>
                     </td>
                     <td className="py-2 pr-2">
+                      <select
+                        value={r.match_mode}
+                        onChange={(e) =>
+                          updateRow(r.id, { match_mode: e.target.value as NitMatchMode })
+                        }
+                        className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                      >
+                        <option value="last_digit">1 dígito</option>
+                        <option value="last_two_digits">Rango 2 dígitos</option>
+                      </select>
+                    </td>
+                    <td className="py-2 pr-2">
                       <input
                         type="number"
                         min={0}
-                        max={9}
+                        max={r.match_mode === "last_two_digits" ? 99 : 9}
                         value={r.last_nit_digit}
                         onChange={(e) =>
                           updateRow(r.id, { last_nit_digit: Number(e.target.value) })
@@ -216,7 +360,7 @@ export function UploadWizard() {
                       <input
                         value={r.period_label}
                         onChange={(e) => updateRow(r.id, { period_label: e.target.value })}
-                        className="w-40 rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                        className="w-48 rounded-lg border border-slate-300 px-2 py-1 text-sm"
                       />
                     </td>
                     <td className="py-2 pr-2">

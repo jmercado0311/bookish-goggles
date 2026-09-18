@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
+import type { NitMatchMode } from "@/lib/types";
 
 interface ReviewedEntry {
   responsibility_code: string;
   last_nit_digit: number;
+  match_mode?: NitMatchMode;
   period_label: string;
   due_date: string;
 }
@@ -35,9 +37,13 @@ export async function POST(request: Request) {
   if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 400 });
 
   const rows = entries.map((e) => ({
-    year,
+    // El año de cada fila sale de su propia fecha (no del año del formulario):
+    // algunos vencimientos "hasta enero" quedan en el año siguiente aunque se
+    // suban como parte del calendario del año en curso.
+    year: Number(e.due_date.slice(0, 4)) || year,
     responsibility_code: e.responsibility_code,
     last_nit_digit: e.last_nit_digit,
+    match_mode: e.match_mode ?? "last_digit",
     period_label: e.period_label,
     due_date: e.due_date,
   }));
