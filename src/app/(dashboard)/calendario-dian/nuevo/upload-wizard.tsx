@@ -202,12 +202,31 @@ export function UploadWizard() {
             <label className="mb-1 block text-sm font-medium text-slate-700">
               PDF del calendario DIAN
             </label>
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="w-full text-sm"
-            />
+            <div className="flex items-center gap-3">
+              <label className="cursor-pointer rounded-lg border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">
+                📄 Elegir archivo PDF
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  className="hidden"
+                />
+              </label>
+              {file ? (
+                <span className="flex items-center gap-2 text-sm text-slate-700">
+                  {file.name}
+                  <button
+                    type="button"
+                    onClick={() => setFile(null)}
+                    className="text-xs font-medium text-red-600 hover:underline"
+                  >
+                    Quitar
+                  </button>
+                </span>
+              ) : (
+                <span className="text-sm text-slate-400">Ningún archivo elegido todavía</span>
+              )}
+            </div>
           </div>
         </div>
         <button
