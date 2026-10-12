@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/api/cron",
   "/api/signup",
   "/api/billing/webhook",
+  "/api/whatsapp/webhook",
 ];
 
 export async function proxy(request: NextRequest) {

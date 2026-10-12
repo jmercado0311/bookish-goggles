@@ -17,6 +17,14 @@ export async function POST(request: Request) {
   if (!b.company_id || !ISO.test(b.period_end ?? "")) {
     return NextResponse.json({ error: "Falta la empresa o la fecha de cierre." }, { status: 400 });
   }
+  const { data: company } = await supabase.from("companies").select("tiene_revisor_fiscal").eq("id", b.company_id).maybeSingle();
+  if (!company) return NextResponse.json({ error: "Empresa no encontrada." }, { status: 404 });
+  if (!company.tiene_revisor_fiscal) {
+    return NextResponse.json(
+      { error: "La empresa no tiene revisor fiscal. Márcalo en su ficha si está obligada o lo tiene por estatutos." },
+      { status: 400 }
+    );
+  }
   const base = (b.materialidad_base in MATERIALITY_BASES ? b.materialidad_base : "activos") as MaterialityBase;
   const porcentaje = Math.min(20, Math.max(0.1, Number(b.materialidad_porcentaje) || MATERIALITY_BASES[base].porcentaje));
 

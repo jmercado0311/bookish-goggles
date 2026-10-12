@@ -31,7 +31,7 @@ transacción).
 
 1. Crea un proyecto nuevo en Supabase (plan gratuito).
 2. En **SQL Editor**, ejecuta en orden los archivos de `supabase/migrations/`
-   (`0001` a `0009`). La `0009` crea los módulos de conciliaciones y revisoría fiscal, la `0008` permite ICA en varios municipios por empresa, la `0007` agrega el calendario ICA de cada despacho y la `0006` el grupo NIIF de cada empresa. La `0005` convierte la app en multi-despacho: si ya
+   (`0001` a `0010`). La `0010` hace opcional la revisoría fiscal (por despacho y por empresa) y crea las tablas del asistente de WhatsApp, la `0009` crea los módulos de conciliaciones y revisoría fiscal, la `0008` permite ICA en varios municipios por empresa, la `0007` agrega el calendario ICA de cada despacho y la `0006` el grupo NIIF de cada empresa. La `0005` convierte la app en multi-despacho: si ya
    tenías datos, quedan en un "Despacho principal", los administradores
    actuales pasan a ser **dueños de la plataforma** y conservan todos los
    módulos activos por un año.
@@ -88,6 +88,40 @@ y ponla como `ANTHROPIC_API_KEY` en Vercel. Solo se usa cuando las reglas no
 reconocen el archivo: se envían los encabezados y una muestra de filas (en PDF,
 el texto del extracto). El consumo queda registrado por despacho en la tabla
 `ai_usage`. Sin la llave todo funciona; el usuario ajusta las columnas a mano.
+
+## 4.2 Asistente de ventas por WhatsApp
+
+Responde a posibles clientes: descubre su necesidad, muestra el módulo que la
+resuelve, responde objeciones, registra al interesado y te pasa la conversación
+cuando piden hablar con una persona (te llega un correo). Se presenta como
+asistente virtual, no inventa funciones ni precios (los toma del panel
+Plataforma) y respeta las solicitudes de baja.
+
+**Mientras no tengas número:** pruébalo en *Plataforma → Asistente de ventas
+por WhatsApp → Simulador* (solo necesita `ANTHROPIC_API_KEY`).
+
+**Cuando tengas el número:**
+1. En [developers.facebook.com](https://developers.facebook.com) crea una app
+   de tipo *Business* y agrega el producto **WhatsApp**. Necesitas una cuenta
+   de Meta Business verificada y un número que no esté registrado en la app de
+   WhatsApp normal (o migrarlo a la API).
+2. En *WhatsApp → Configuración de la API* copia el **Phone number ID** →
+   `WHATSAPP_PHONE_NUMBER_ID`.
+3. Crea un **usuario del sistema** en Meta Business con permiso
+   `whatsapp_business_messaging` y genera un token permanente → `WHATSAPP_TOKEN`.
+4. En *Configuración de la app → Básica* copia el **secreto de la app** →
+   `WHATSAPP_APP_SECRET`.
+5. Inventa una palabra clave → `WHATSAPP_VERIFY_TOKEN`.
+6. En *WhatsApp → Configuración → Webhook*: URL
+   `https://tu-app.vercel.app/api/whatsapp/webhook`, el mismo token de
+   verificación, y suscríbete al campo **messages**.
+7. Pon `NEXT_PUBLIC_APP_URL` (URL pública) y `SALES_NOTIFY_EMAIL` (donde te
+   llegan los avisos) en Vercel y vuelve a desplegar.
+
+Notas: WhatsApp permite responder libremente durante 24 horas desde el último
+mensaje del cliente; después solo con plantillas aprobadas por Meta. Meta cobra
+por conversación según su tarifa vigente para Colombia, y la IA cobra por uso
+(centavos de dólar por conversación).
 
 ## 5. Variables de entorno
 
@@ -160,7 +194,11 @@ Abre http://localhost:3000: verás la página de venta. Entra con **Ingresar**.
   intereses, retenciones, cheques pendientes, consignaciones en tránsito) con
   la cuenta sugerida. Se puede conciliar a mano, imprimir y descargar en Excel.
   Los auxiliares importados se consultan por cuenta, tercero, texto y fechas.
-- **Revisoría fiscal**: por empresa y cierre, con el balance de prueba calcula
+- **Revisoría fiscal** (complemento solo para despachos que la ejercen; el
+  menú solo aparece si el módulo está activo, y solo aplica a empresas marcadas
+  "tiene revisor fiscal" — la ficha de la empresa sugiere si está obligada por
+  el art. 203 C. de Co. o el par. 2 del art. 13 de la Ley 43 de 1990, y los
+  estados financieros avisan si una empresa no marcada supera los topes): por empresa y cierre, con el balance de prueba calcula
   la materialidad (NIA 320), propone la matriz de riesgos (NIA 315 / 240 / 570)
   y los papeles de trabajo por área, detecta señales de alerta del balance,
   registra hallazgos, sugiere la opinión (NIA 450 / 705) y genera borradores

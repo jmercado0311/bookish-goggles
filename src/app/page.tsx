@@ -43,6 +43,24 @@ const FEATURES: Record<string, string[]> = {
   ],
 };
 
+function ModuleCard({ m }: { m: ServiceModule }) {
+  return (
+    <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5">
+      <p className="text-sm font-semibold text-slate-900">{m.name}</p>
+      <p className="mt-2 text-2xl font-bold text-slate-900">
+        {formatCop(m.price_cop)}
+        <span className="text-xs font-normal text-slate-500"> / mes</span>
+      </p>
+      <p className="mt-2 text-sm text-slate-500">{m.description}</p>
+      <ul className="mt-4 flex-1 space-y-1.5 text-sm text-slate-700">
+        {(FEATURES[m.code] ?? []).map((f) => (
+          <li key={f}>✓ {f}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default async function Home() {
   const supabase = await createClient();
   const {
@@ -55,6 +73,8 @@ export default async function Home() {
     .select("*")
     .eq("active", true)
     .order("sort_order");
+
+  const all = (modules ?? []) as ServiceModule[];
 
   return (
     <div className="flex flex-1 flex-col bg-white">
@@ -116,22 +136,29 @@ export default async function Home() {
           pagando 6 meses y 20 % pagando el año.
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {((modules ?? []) as ServiceModule[]).map((m) => (
-            <div key={m.code} className="flex flex-col rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm font-semibold text-slate-900">{m.name}</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">
-                {formatCop(m.price_cop)}
-                <span className="text-xs font-normal text-slate-500"> / mes</span>
-              </p>
-              <p className="mt-2 text-sm text-slate-500">{m.description}</p>
-              <ul className="mt-4 flex-1 space-y-1.5 text-sm text-slate-700">
-                {(FEATURES[m.code] ?? []).map((f) => (
-                  <li key={f}>✓ {f}</li>
-                ))}
-              </ul>
-            </div>
+          {all.filter((m) => m.code !== "revisoria").map((m) => (
+            <ModuleCard key={m.code} m={m} />
           ))}
         </div>
+        {all.some((m) => m.code === "revisoria") && (
+          <div className="mt-10 rounded-3xl bg-slate-900 p-6 text-white sm:p-8">
+            <div className="grid items-center gap-6 md:grid-cols-2">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-amber-400">¿Ejerces revisoría fiscal?</p>
+                <h3 className="mt-2 text-2xl font-bold">Complemento para revisores fiscales</h3>
+                <p className="mt-2 text-sm text-slate-300">
+                  Solo para despachos que ejercen revisoría fiscal y para las empresas obligadas a tenerla (art. 203
+                  C. de Co. y par. 2 del art. 13 de la Ley 43 de 1990). Contaryx te ayuda a identificar cuáles son.
+                </p>
+              </div>
+              <div className="text-slate-900">
+                {all.filter((m) => m.code === "revisoria").map((m) => (
+                  <ModuleCard key={m.code} m={m} />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         <p className="mt-6 text-center text-xs text-slate-500">
           Pagos seguros con Wompi (Bancolombia): PSE, Nequi, tarjeta débito o crédito.
         </p>

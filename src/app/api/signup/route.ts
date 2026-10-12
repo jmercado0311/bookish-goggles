@@ -14,6 +14,7 @@ export async function POST(request: Request) {
   const email = String(body.email ?? "").trim().toLowerCase();
   const orgName = String(body.organization_name ?? "").trim();
   const nit = String(body.nit ?? "").trim() || null;
+  const ejerceRevisoria = body.ejerce_revisoria === true;
 
   if (!fullName || !orgName || !EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "Completa nombre, despacho y un correo válido." }, { status: 400 });
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
 
   const { data: org, error: orgError } = await admin
     .from("organizations")
-    .insert({ name: orgName, nit, contact_email: email })
+    .insert({ name: orgName, nit, contact_email: email, ejerce_revisoria: ejerceRevisoria })
     .select()
     .single();
   if (orgError) return NextResponse.json({ error: orgError.message }, { status: 500 });
@@ -61,10 +62,12 @@ export async function POST(request: Request) {
     .eq("id", invited.user.id);
   if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
 
-  const { data: modules } = await admin.from("service_modules").select("code").eq("active", true);
+  // La revisoría fiscal solo se activa en la prueba a quienes la ejercen
+  const { data: allModules } = await admin.from("service_modules").select("code").eq("active", true);
+  const modules = (allModules ?? []).filter((m) => m.code !== "revisoria" || ejerceRevisoria);
   const trialUntil = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
   await admin.from("organization_subscriptions").insert(
-    (modules ?? []).map((m) => ({
+    modules.map((m) => ({
       organization_id: org.id,
       module_code: m.code,
       active_until: trialUntil,

@@ -16,11 +16,19 @@ const FIELDS: { key: keyof Omit<Settings, "id">; label: string }[] = [
   { key: "representante_legal", label: "Representante legal" },
   { key: "contador_nombre", label: "Contador público" },
   { key: "contador_tp", label: "T.P. del contador" },
-  { key: "revisor_fiscal_nombre", label: "Revisor fiscal (si aplica)" },
+  { key: "revisor_fiscal_nombre", label: "Revisor fiscal" },
   { key: "revisor_fiscal_tp", label: "T.P. del revisor fiscal" },
 ];
 
-export function ReportSettings({ trialBalance, companyId }: { trialBalance: Settings; companyId: string }) {
+export function ReportSettings({
+  trialBalance,
+  companyId,
+  tieneRevisor,
+}: {
+  trialBalance: Settings;
+  companyId: string;
+  tieneRevisor: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Settings>(trialBalance);
@@ -70,7 +78,7 @@ export function ReportSettings({ trialBalance, companyId }: { trialBalance: Sett
   return (
     <form onSubmit={save} className="w-full max-w-xl space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        {FIELDS.map((f) => (
+        {FIELDS.filter((f) => tieneRevisor || !f.key.startsWith("revisor")).map((f) => (
           <label key={f.key} className="block text-sm">
             <span className="mb-1 block text-xs font-medium text-slate-600">{f.label}</span>
             <input

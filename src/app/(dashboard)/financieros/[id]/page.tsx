@@ -136,8 +136,9 @@ export default async function TrialBalancePage({
       representanteLegal={tb.representante_legal}
       contadorNombre={tb.contador_nombre}
       contadorTp={tb.contador_tp}
-      revisorNombre={tb.revisor_fiscal_nombre}
-      revisorTp={tb.revisor_fiscal_tp}
+      // Firma del revisor fiscal solo en empresas que lo tienen
+      revisorNombre={company.tiene_revisor_fiscal ? tb.revisor_fiscal_nombre : null}
+      revisorTp={company.tiene_revisor_fiscal ? tb.revisor_fiscal_tp : null}
     />
   );
 
@@ -152,6 +153,9 @@ export default async function TrialBalancePage({
         spec={spec}
         checks={complianceChecks({
           spec,
+          tieneRevisor: company.tiene_revisor_fiscal,
+          tipoSocietario: company.tipo_societario,
+          periodEnd: tb.period_end,
           lines,
           balance: bs,
           income,
@@ -218,7 +222,7 @@ export default async function TrialBalancePage({
             {org ? ` · ${org.name}` : ""} · {spec.short}
           </p>
         </div>
-        {isAdmin && <ReportSettings trialBalance={tb} companyId={tb.company_id} />}
+        {isAdmin && <ReportSettings trialBalance={tb} companyId={tb.company_id} tieneRevisor={company.tiene_revisor_fiscal} />}
       </div>
 
       <nav className="flex gap-1 overflow-x-auto border-b border-slate-200 print:hidden">

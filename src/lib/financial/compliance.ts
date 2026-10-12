@@ -1,4 +1,5 @@
 import type { FrameworkSpec } from "./frameworks";
+import { evaluateObligation, smmlvFor } from "@/lib/audit/obligation";
 import type { BalanceSheet, CashFlow, IncomeStatement, TBLine } from "./statements";
 
 /**
@@ -24,6 +25,9 @@ export function complianceChecks(input: {
   hasComparativeIncome: boolean;
   representanteLegal: string | null;
   contador: string | null;
+  tieneRevisor?: boolean;
+  tipoSocietario?: string | null;
+  periodEnd?: string;
 }): ComplianceCheck[] {
   const { spec, lines, balance, income, cash } = input;
   const checks: ComplianceCheck[] = [];
@@ -117,6 +121,24 @@ export function complianceChecks(input: {
       text: "El patrimonio es negativo o nulo: evalúe la hipótesis de negocio en marcha y revele las incertidumbres materiales.",
       ref: spec.key === "grupo1" ? "NIC 1, párrafos 25 y 26" : spec.key === "grupo2" ? "NIIF para las PYMES, párrafos 3.8 y 3.9" : "Anexo 3 (negocio en marcha)",
     });
+  }
+
+  // ¿Debería tener revisor fiscal? Con los activos e ingresos de este balance
+  if (input.tieneRevisor === false && input.periodEnd) {
+    const smmlv = smmlvFor(Number(input.periodEnd.slice(0, 4)));
+    const ev = evaluateObligation({
+      tipo: input.tipoSocietario ?? null,
+      activosBrutos: balance.current.activo_total,
+      ingresosBrutos: income.ingresos + income.otros_ingresos + income.ingresos_financieros,
+      smmlv: smmlv.value,
+    });
+    if (ev.obligada) {
+      checks.push({
+        status: "alerta",
+        text: `Esta empresa podría estar obligada a tener revisor fiscal y no está marcada así. ${ev.razones.join(" ")} Verifica y actualiza su ficha.`,
+        ref: "Art. 203 C. de Co. y par. 2, art. 13, Ley 43 de 1990",
+      });
+    }
   }
 
   checks.push(

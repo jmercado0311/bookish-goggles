@@ -6,6 +6,7 @@ import Link from "next/link";
 export default function RegistroPage() {
   const [form, setForm] = useState({ full_name: "", email: "", organization_name: "", nit: "" });
   const [acepta, setAcepta] = useState(false);
+  const [revisoria, setRevisoria] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -17,7 +18,7 @@ export default function RegistroPage() {
     const res = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, acepta_terminos: acepta }),
+      body: JSON.stringify({ ...form, acepta_terminos: acepta, ejerce_revisoria: revisoria === true }),
     });
     setLoading(false);
     if (!res.ok) {
@@ -64,6 +65,19 @@ export default function RegistroPage() {
             />
             <label className="mb-1 block text-sm font-medium text-slate-700">NIT o cédula (opcional)</label>
             <input value={form.nit} onChange={(e) => setForm({ ...form, nit: e.target.value })} className={input} />
+
+            <fieldset className="mb-4">
+              <legend className="mb-1 block text-sm font-medium text-slate-700">¿Ejerces revisoría fiscal?</legend>
+              <div className="flex gap-4 text-sm text-slate-700">
+                <label className="flex items-center gap-1">
+                  <input type="radio" name="revisoria" required checked={revisoria === true} onChange={() => setRevisoria(true)} /> Sí
+                </label>
+                <label className="flex items-center gap-1">
+                  <input type="radio" name="revisoria" checked={revisoria === false} onChange={() => setRevisoria(false)} /> No
+                </label>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">Si la ejerces, incluimos en tu prueba el módulo de revisoría fiscal.</p>
+            </fieldset>
 
             <label className="mb-4 flex items-start gap-2 text-xs text-slate-600">
               <input type="checkbox" checked={acepta} onChange={(e) => setAcepta(e.target.checked)} className="mt-0.5" required />

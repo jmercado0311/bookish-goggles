@@ -13,11 +13,7 @@ const STATUS_LABEL: Record<string, string> = {
   MANUAL: "Activación manual",
 };
 
-export default async function FacturacionPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ id?: string }>;
-}) {
+export default async function FacturacionPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const { supabase, profile } = await requireAdmin();
   const { id: transactionId } = await searchParams;
 
@@ -30,7 +26,10 @@ export default async function FacturacionPage({
 
   const [{ data: modules }, { data: subs }, { data: payments }] = await Promise.all([
     supabase.from("service_modules").select("*").eq("active", true).order("sort_order"),
-    supabase.from("organization_subscriptions").select("*").eq("organization_id", profile.organization_id ?? ""),
+    supabase
+      .from("organization_subscriptions")
+      .select("*")
+      .eq("organization_id", profile.organization_id ?? ""),
     supabase
       .from("payments")
       .select("*")
@@ -39,6 +38,7 @@ export default async function FacturacionPage({
       .limit(20),
   ]);
 
+  const allModules = (modules ?? []) as ServiceModule[];
   const subByModule = new Map(((subs ?? []) as OrganizationSubscription[]).map((s) => [s.module_code, s]));
 
   return (
@@ -46,8 +46,8 @@ export default async function FacturacionPage({
       <div>
         <h1 className="mb-1 text-lg font-semibold text-slate-900">Plan y pagos</h1>
         <p className="text-sm text-slate-500">
-          Activa solo los módulos que necesitas. Pagas por PSE, Nequi, tarjeta o Bancolombia a través
-          de Wompi. Los precios incluyen IVA.
+          Activa solo los módulos que necesitas. Pagas por PSE, Nequi, tarjeta o Bancolombia a través de
+          Wompi. Los precios incluyen IVA.
         </p>
       </div>
 
@@ -69,36 +69,61 @@ export default async function FacturacionPage({
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {((modules ?? []) as ServiceModule[]).map((m) => {
-          const sub = subByModule.get(m.code);
-          const until = sub ? new Date(sub.active_until) : null;
-          const active = isActiveUntil(sub?.active_until);
-          return (
-            <div key={m.code} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="mb-2 flex items-start justify-between gap-3">
-                <p className="text-sm font-semibold text-slate-900">{m.name}</p>
-                <span
-                  className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    active ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {active ? `Activo hasta ${until!.toLocaleDateString("es-CO")}` : "Inactivo"}
-                </span>
-              </div>
-              <p className="mb-4 flex-1 text-sm text-slate-500">{m.description}</p>
-              <p className="mb-3 text-lg font-semibold text-slate-900">
-                {formatCop(m.price_cop)} <span className="text-xs font-normal text-slate-500">/ mes</span>
+      {[
+        { title: "Módulos para todo despacho", list: allModules.filter((m) => m.code !== "revisoria") },
+        {
+          title: "Complemento para revisores fiscales",
+          list: allModules.filter((m) => m.code === "revisoria"),
+        },
+      ]
+        .filter((g) => g.list.length > 0)
+        .map((g) => (
+          <div key={g.title}>
+            <h2 className="mb-3 text-sm font-semibold text-slate-900">{g.title}</h2>
+            {g.title.startsWith("Complemento") && (
+              <p className="mb-3 text-xs text-slate-500">
+                Solo si tu despacho ejerce revisoría fiscal. Se usa con las empresas marcadas con revisor
+                fiscal.
               </p>
-              {profile.is_platform_owner ? (
-                <p className="text-xs text-slate-500">Como dueño de la plataforma tienes todo activo.</p>
-              ) : (
-                <BuyModule moduleCode={m.code} monthlyPrice={m.price_cop} renew={active} />
-              )}
+            )}
+            <div className="grid gap-4 md:grid-cols-2">
+              {g.list.map((m) => {
+                const sub = subByModule.get(m.code);
+                const until = sub ? new Date(sub.active_until) : null;
+                const active = isActiveUntil(sub?.active_until);
+                return (
+                  <div
+                    key={m.code}
+                    className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5"
+                  >
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-900">{m.name}</p>
+                      <span
+                        className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          active ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {active ? `Activo hasta ${until!.toLocaleDateString("es-CO")}` : "Inactivo"}
+                      </span>
+                    </div>
+                    <p className="mb-4 flex-1 text-sm text-slate-500">{m.description}</p>
+                    <p className="mb-3 text-lg font-semibold text-slate-900">
+                      {formatCop(m.price_cop)}{" "}
+                      <span className="text-xs font-normal text-slate-500">/ mes</span>
+                    </p>
+                    {profile.is_platform_owner ? (
+                      <p className="text-xs text-slate-500">
+                        Como dueño de la plataforma tienes todo activo.
+                      </p>
+                    ) : (
+                      <BuyModule moduleCode={m.code} monthlyPrice={m.price_cop} renew={active} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        ))}
 
       <div>
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Historial de pagos</h2>
@@ -122,7 +147,8 @@ export default async function FacturacionPage({
                   <tr key={p.id} className="border-t border-slate-100">
                     <td className="px-4 py-2">{new Date(p.created_at).toLocaleDateString("es-CO")}</td>
                     <td className="px-4 py-2">
-                      {((modules ?? []) as ServiceModule[]).find((m) => m.code === p.module_code)?.name ?? p.module_code}
+                      {((modules ?? []) as ServiceModule[]).find((m) => m.code === p.module_code)?.name ??
+                        p.module_code}
                     </td>
                     <td className="px-4 py-2">{p.months}</td>
                     <td className="px-4 py-2">{formatCop(p.amount_in_cents / 100)}</td>

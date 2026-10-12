@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requirePlatformOwner } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatCop, isActiveUntil, withinLastDays } from "@/lib/billing/modules";
@@ -43,6 +44,9 @@ export default async function PlataformaPage() {
         <p className="text-sm text-slate-500">
           Tus clientes (despachos), sus módulos y tus precios. Solo tú ves esta sección.
         </p>
+        <Link href="/plataforma/whatsapp" className="mt-2 inline-block rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700">
+          Asistente de ventas por WhatsApp →
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

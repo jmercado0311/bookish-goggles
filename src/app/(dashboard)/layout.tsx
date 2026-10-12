@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { Organization, OrganizationSubscription } from "@/lib/types";
-import { daysUntilDate } from "@/lib/billing/modules";
+import { daysUntilDate, isActiveUntil } from "@/lib/billing/modules";
 import { SignOutButton } from "./sign-out-button";
 
 export default async function DashboardLayout({
@@ -21,12 +21,16 @@ export default async function DashboardLayout({
       .eq("organization_id", profile.organization_id ?? ""),
   ]);
 
+  const revisoriaActiva =
+    isOwner || ((subs ?? []) as OrganizationSubscription[]).some((s) => s.module_code === "revisoria" && isActiveUntil(s.active_until));
+
   const links = [
     { href: "/vencimientos", label: "Vencimientos" },
     { href: "/empresas", label: "Empresas" },
     { href: "/financieros", label: "Estados financieros" },
     { href: "/conciliaciones", label: "Conciliaciones" },
-    { href: "/revisoria", label: "Revisoría fiscal" },
+    // La revisoría fiscal solo aparece a quien tiene el módulo (no todo despacho la ejerce)
+    ...(revisoriaActiva ? [{ href: "/revisoria", label: "Revisoría fiscal" }] : []),
     ...(isAdmin
       ? [
           { href: "/calendario-ica", label: "Calendario ICA" },
