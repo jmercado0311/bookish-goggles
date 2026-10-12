@@ -29,7 +29,7 @@ transacción).
 
 1. Crea un proyecto nuevo en Supabase (plan gratuito).
 2. En **SQL Editor**, ejecuta en orden los archivos de `supabase/migrations/`
-   (`0001` a `0006`). La `0006` agrega el grupo NIIF de cada empresa. La `0005` convierte la app en multi-despacho: si ya
+   (`0001` a `0007`). La `0007` agrega el calendario ICA de cada despacho y la `0006` el grupo NIIF de cada empresa. La `0005` convierte la app en multi-despacho: si ya
    tenías datos, quedan en un "Despacho principal", los administradores
    actuales pasan a ser **dueños de la plataforma** y conservan todos los
    módulos activos por un año.
@@ -132,6 +132,11 @@ Abre http://localhost:3000: verás la página de venta. Entra con **Ingresar**.
     notas; sin ORI ni impuesto diferido.
   Antes de emitir, la pestaña Estados muestra una verificación de cumplimiento
   con la norma citada en cada punto.
+- **Calendario ICA**: el ICA es municipal, así que cada despacho carga el
+  calendario de los municipios de sus empresas (digitado o importado de un
+  Excel/CSV con columnas Periodo, Fecha y, si aplica, Último dígito del NIT).
+  Las empresas toman sus fechas según municipio, periodicidad y dígito del NIT;
+  la página avisa qué municipios de tus empresas aún no tienen calendario.
 - **Usuarios**: invita colaboradores y asígnales empresas.
 - **Estados financieros**: importa el balance de prueba en Excel (.xlsx) o CSV
   exportado de Siigo, World Office, Alegra, Helisa, ContaPyme, etc. La app:

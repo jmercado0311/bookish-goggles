@@ -27,6 +27,7 @@ export default async function DashboardLayout({
     { href: "/financieros", label: "Estados financieros" },
     ...(isAdmin
       ? [
+          { href: "/calendario-ica", label: "Calendario ICA" },
           { href: "/usuarios", label: "Usuarios" },
           { href: "/facturacion", label: "Plan y pagos" },
         ]

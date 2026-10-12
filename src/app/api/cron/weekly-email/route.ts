@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllByYears } from "@/lib/supabase/fetch-all";
 import { computeCompanyDeadlines } from "@/lib/tax-rules/compute-deadlines";
 import { currentMonday } from "@/lib/tax-rules/week";
 import { buildWeeklyDigest } from "@/lib/email/weekly-digest";
@@ -9,6 +10,7 @@ import type {
   CompanyIca,
   CompanyResponsibility,
   CustomObligation,
+  IcaCalendarEntry,
   Profile,
   SubmittedDeclaration,
   TaxCalendarEntry,
@@ -36,6 +38,7 @@ export async function GET(request: Request) {
     { data: access },
     { data: submitted },
     { data: subscriptions },
+    icaCalendar,
   ] = await Promise.all([
     admin.from("profiles").select("*"),
     admin.from("companies").select("*"),
@@ -50,6 +53,7 @@ export async function GET(request: Request) {
       .select("organization_id")
       .eq("module_code", "vencimientos")
       .gt("active_until", new Date().toISOString()),
+    fetchAllByYears<IcaCalendarEntry>(admin, "ica_calendar", years),
   ]);
 
   // Solo despachos con el módulo de vencimientos vigente reciben el correo
@@ -75,6 +79,7 @@ export async function GET(request: Request) {
     icaByCompany,
     customObligationsByCompany: customByCompany,
     taxCalendar: (taxCalendar ?? []) as TaxCalendarEntry[],
+    icaCalendar,
     submittedDeclarations: (submitted ?? []) as SubmittedDeclaration[],
     years,
   });

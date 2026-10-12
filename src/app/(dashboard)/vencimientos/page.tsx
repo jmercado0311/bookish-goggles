@@ -5,9 +5,11 @@ import type {
   CompanyIca,
   CompanyResponsibility,
   CustomObligation,
+  IcaCalendarEntry,
   SubmittedDeclaration,
   TaxCalendarEntry,
 } from "@/lib/types";
+import { fetchAllByYears } from "@/lib/supabase/fetch-all";
 import { computeCompanyDeadlines } from "@/lib/tax-rules/compute-deadlines";
 import { DeadlinesView } from "./deadlines-view";
 
@@ -29,6 +31,7 @@ export default async function VencimientosPage() {
     { data: customObligations },
     { data: taxCalendar },
     { data: submitted },
+    icaCalendar,
   ] = await Promise.all([
     supabase.from("companies").select("*").order("razon_social"),
     supabase.from("company_responsibilities").select("*"),
@@ -36,6 +39,7 @@ export default async function VencimientosPage() {
     supabase.from("custom_obligations").select("*"),
     supabase.from("tax_calendar").select("*").in("year", years),
     supabase.from("submitted_declarations").select("*"),
+    fetchAllByYears<IcaCalendarEntry>(supabase, "ica_calendar", years),
   ]);
 
   const responsibilitiesByCompany = new Map<string, CompanyResponsibility[]>();
@@ -59,6 +63,7 @@ export default async function VencimientosPage() {
     icaByCompany,
     customObligationsByCompany: customByCompany,
     taxCalendar: (taxCalendar ?? []) as TaxCalendarEntry[],
+    icaCalendar,
     submittedDeclarations: (submitted ?? []) as SubmittedDeclaration[],
     years,
   });

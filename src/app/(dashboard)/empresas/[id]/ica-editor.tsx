@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { CompanyIca } from "@/lib/types";
+import { ICA_PERIODICIDADES } from "@/lib/tax-rules/ica-calendar";
 
 export function IcaEditor({
   companyId,
@@ -51,8 +53,12 @@ export function IcaEditor({
     <div className="max-w-2xl rounded-2xl border border-slate-200 bg-white p-6">
       <h2 className="mb-1 text-sm font-semibold text-slate-900">ICA (opcional)</h2>
       <p className="mb-4 text-xs text-slate-500">
-        Es municipal y opcional: si no lo defines, el resto de la ficha de la empresa
-        funciona con normalidad.
+        Indica el municipio y la periodicidad: las fechas salen del{" "}
+        <Link href="/calendario-ica" className="text-blue-600 hover:underline">
+          calendario ICA
+        </Link>{" "}
+        que tu despacho cargue para ese municipio. La regla de abajo solo se usa mientras ese
+        calendario no esté cargado.
       </p>
 
       {readOnly ? (
@@ -87,8 +93,11 @@ export function IcaEditor({
                 onChange={(e) => setPeriodicidad(e.target.value)}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
               >
-                <option value="bimestral">Bimestral</option>
-                <option value="anual">Anual</option>
+                {ICA_PERIODICIDADES.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -100,7 +109,7 @@ export function IcaEditor({
                 checked={modo === "regla"}
                 onChange={() => setModo("regla")}
               />
-              Día fijo cada periodo
+              Respaldo: día fijo cada mes
             </label>
             <label className="flex items-center gap-2">
               <input
@@ -108,7 +117,7 @@ export function IcaEditor({
                 checked={modo === "fecha"}
                 onChange={() => setModo("fecha")}
               />
-              Fecha puntual
+              Respaldo: fecha puntual
             </label>
           </div>
 

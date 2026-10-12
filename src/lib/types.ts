@@ -85,6 +85,22 @@ export interface CompanyIca {
   fecha_puntual: string | null;
 }
 
+export type IcaPeriodicidad = "mensual" | "bimestral" | "cuatrimestral" | "semestral" | "anual";
+
+/** Fecha del calendario ICA de un municipio, cargada por el despacho. */
+export interface IcaCalendarEntry {
+  id: string;
+  organization_id: string;
+  municipio: string;
+  year: number;
+  periodicidad: IcaPeriodicidad;
+  period_label: string;
+  due_date: string;
+  /** null = aplica a todos los NIT; 0-9 = solo NIT terminados en ese dígito. */
+  last_nit_digit: number | null;
+  source_file_name: string | null;
+}
+
 export type NitMatchMode = "last_digit" | "last_two_digits";
 
 export interface TaxCalendarEntry {
