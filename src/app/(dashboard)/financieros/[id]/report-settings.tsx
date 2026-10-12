@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FRAMEWORK_LABEL, type Framework } from "@/lib/financial/notes";
 
 interface Settings {
   id: string;
-  framework: Framework;
   representante_legal: string | null;
   contador_nombre: string | null;
   contador_tp: string | null;
@@ -14,7 +12,7 @@ interface Settings {
   revisor_fiscal_tp: string | null;
 }
 
-const FIELDS: { key: keyof Omit<Settings, "id" | "framework">; label: string }[] = [
+const FIELDS: { key: keyof Omit<Settings, "id">; label: string }[] = [
   { key: "representante_legal", label: "Representante legal" },
   { key: "contador_nombre", label: "Contador público" },
   { key: "contador_tp", label: "T.P. del contador" },
@@ -62,7 +60,7 @@ export function ReportSettings({ trialBalance, companyId }: { trialBalance: Sett
           onClick={() => setOpen(true)}
           className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
-          Firmas y marco técnico
+          Firmas
         </button>
       </div>
     );
@@ -71,20 +69,6 @@ export function ReportSettings({ trialBalance, companyId }: { trialBalance: Sett
   const input = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
   return (
     <form onSubmit={save} className="w-full max-w-xl space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
-      <label className="block text-sm">
-        <span className="mb-1 block text-xs font-medium text-slate-600">Marco técnico</span>
-        <select
-          value={form.framework}
-          onChange={(e) => setForm({ ...form, framework: e.target.value as Framework })}
-          className={input}
-        >
-          {(Object.keys(FRAMEWORK_LABEL) as Framework[]).map((f) => (
-            <option key={f} value={f}>
-              {FRAMEWORK_LABEL[f]}
-            </option>
-          ))}
-        </select>
-      </label>
       <div className="grid gap-3 sm:grid-cols-2">
         {FIELDS.map((f) => (
           <label key={f.key} className="block text-sm">

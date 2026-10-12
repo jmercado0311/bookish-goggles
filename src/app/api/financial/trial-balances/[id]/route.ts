@@ -3,7 +3,6 @@ import { requireAdmin } from "@/lib/auth";
 import { trimStringFields } from "@/lib/trim-fields";
 
 const EDITABLE = [
-  "framework",
   "representante_legal",
   "contador_nombre",
   "contador_tp",
@@ -11,7 +10,7 @@ const EDITABLE = [
   "revisor_fiscal_tp",
 ] as const;
 
-// PATCH: marco técnico y firmas de los estados financieros
+// PATCH: firmas de los estados financieros (el marco técnico es el grupo NIIF de la empresa)
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { supabase } = await requireAdmin();
   const { id } = await params;
@@ -20,9 +19,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const update: Record<string, unknown> = {};
   for (const key of EDITABLE) {
     if (key in body) update[key] = body[key] === "" ? null : body[key];
-  }
-  if ("framework" in update && !["grupo1", "grupo2", "grupo3"].includes(String(update.framework))) {
-    return NextResponse.json({ error: "Marco técnico no válido." }, { status: 400 });
   }
 
   const { error } = await supabase.from("trial_balances").update(update).eq("id", id);

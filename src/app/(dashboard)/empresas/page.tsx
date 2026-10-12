@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import type { Company } from "@/lib/types";
+import { FRAMEWORKS } from "@/lib/financial/frameworks";
 
 export default async function EmpresasPage() {
   const { supabase, profile } = await requireUser();
@@ -59,6 +60,9 @@ export default async function EmpresasPage() {
             </p>
             <p className="mt-1 text-xs text-slate-400">
               {c.tipo_contribuyente} · {c.regimen ?? "sin régimen"}
+            </p>
+            <p className={`mt-1 text-xs ${c.niif_grupo ? "text-slate-500" : "font-medium text-amber-600"}`}>
+              {c.niif_grupo ? FRAMEWORKS[c.niif_grupo].short : "Grupo NIIF sin definir"}
             </p>
           </Link>
         ))}

@@ -1,4 +1,4 @@
-# Vencimientos Tributarios
+# Contaryx
 
 Plataforma web (SaaS) para contadores colombianos, instalable como app (PWA)
 en celular y computador. Cada despacho o firma contable que la compra tiene su
@@ -9,7 +9,7 @@ Módulos (cada uno se cobra por separado, suscripción mensual con Wompi):
 | Módulo | Qué hace |
 | --- | --- |
 | **Vencimientos tributarios** | Calendario DIAN por NIT, ICA, nómina/PILA, correo semanal |
-| **Estados financieros NIIF** | Situación financiera, resultados integral, cambios en el patrimonio y flujo de efectivo (indirecto) desde el balance de prueba |
+| **Estados financieros NIIF** | Juego completo según el grupo NIIF de cada empresa (1, 2 o 3), con verificación de cumplimiento y certificación, desde el balance de prueba |
 | **Notas a los estados financieros** | Entidad, bases de preparación, políticas contables y una nota por rubro, editables |
 | **Indicadores financieros** | Liquidez, endeudamiento, rentabilidad, actividad, EBITDA e indicadores RUP con interpretación |
 
@@ -29,7 +29,7 @@ transacción).
 
 1. Crea un proyecto nuevo en Supabase (plan gratuito).
 2. En **SQL Editor**, ejecuta en orden los archivos de `supabase/migrations/`
-   (`0001` a `0005`). La `0005` convierte la app en multi-despacho: si ya
+   (`0001` a `0006`). La `0006` agrega el grupo NIIF de cada empresa. La `0005` convierte la app en multi-despacho: si ya
    tenías datos, quedan en un "Despacho principal", los administradores
    actuales pasan a ser **dueños de la plataforma** y conservan todos los
    módulos activos por un año.
@@ -109,6 +109,8 @@ Abre http://localhost:3000: verás la página de venta. Entra con **Ingresar**.
    `APP_URL` (URL pública sin `/` al final) y `CRON_SECRET`.
 2. El workflow `.github/workflows/weekly-email.yml` corre los lunes 8:00 a. m.
    (hora Colombia). Solo reciben correo los despachos con Vencimientos activo.
+   El correo trae los vencidos sin presentar, la semana en curso día por día y
+   las 4 semanas siguientes (`SEMANAS_ADELANTE` en `src/lib/email/weekly-digest.ts`).
 
 ## 9. Uso
 
@@ -119,7 +121,17 @@ Abre http://localhost:3000: verás la página de venta. Entra con **Ingresar**.
   módulos y precios de cada módulo.
 
 **Administrador de cada despacho (tu cliente):**
-- **Empresas**: NIT y responsabilidades del RUT (casilla 53).
+- **Empresas**: NIT, responsabilidades del RUT (casilla 53) y **grupo NIIF**
+  (obligatorio). El grupo define el juego de estados financieros:
+  - Grupo 1 (NIIF plenas): situación financiera, resultado y ORI (dividido según
+    NIC 1.82A), cambios en el patrimonio, flujos de efectivo y notas, incluidas
+    las de NIC 1.104 (gastos por naturaleza) y NIC 1.134 (gestión del capital).
+  - Grupo 2 (NIIF para las PYMES): situación financiera, resultado integral,
+    cambios en el patrimonio, flujos de efectivo y notas (Secciones 3 a 8).
+  - Grupo 3 (microempresas): situación financiera, estado de resultados y
+    notas; sin ORI ni impuesto diferido.
+  Antes de emitir, la pestaña Estados muestra una verificación de cumplimiento
+  con la norma citada en cada punto.
 - **Usuarios**: invita colaboradores y asígnales empresas.
 - **Estados financieros**: importa el balance de prueba en Excel (.xlsx) o CSV
   exportado de Siigo, World Office, Alegra, Helisa, ContaPyme, etc. La app:
@@ -151,6 +163,12 @@ Los despachos nuevos tienen 14 días de prueba gratis con todos los módulos
 - **Responsabilidad profesional**: la app es una herramienta de apoyo; los
   estados financieros los revisa y certifica el contador público de cada
   empresa.
+
+## Video de presentación
+
+`public/video/contaryx-demo.mp4` (87 s, sin narración) aparece en la página de
+inicio. Muestra cómo funciona Contaryx y sus beneficios para reducir riesgos y
+aplicar bien la norma.
 
 ## Notas técnicas
 

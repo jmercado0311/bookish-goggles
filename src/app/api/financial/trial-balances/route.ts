@@ -28,7 +28,6 @@ export async function POST(request: Request) {
     company_id?: string;
     period_start?: string;
     period_end?: string;
-    framework?: string;
     source_file_name?: string;
     lines?: LineInput[];
   };
@@ -53,6 +52,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Hay códigos de cuenta no numéricos." }, { status: 400 });
   }
 
+  // El marco técnico sale del grupo NIIF de la empresa (nunca del navegador)
+  const { data: company } = await supabase
+    .from("companies")
+    .select("niif_grupo")
+    .eq("id", body.company_id)
+    .maybeSingle();
+  if (!company) return NextResponse.json({ error: "Empresa no encontrada." }, { status: 404 });
+  if (!company.niif_grupo) {
+    return NextResponse.json(
+      { error: "Primero indica a qué grupo NIIF pertenece la empresa." },
+      { status: 400 }
+    );
+  }
+
   // Reemplaza el balance del mismo cierre si ya existía (volver a subirlo corregido)
   await supabase
     .from("trial_balances")
@@ -66,7 +79,7 @@ export async function POST(request: Request) {
       company_id: body.company_id,
       period_start: body.period_start,
       period_end: body.period_end,
-      framework: ["grupo1", "grupo2", "grupo3"].includes(body.framework ?? "") ? body.framework : "grupo2",
+      framework: company.niif_grupo,
       source_file_name: body.source_file_name?.slice(0, 200) ?? null,
       created_by: user.id,
     })

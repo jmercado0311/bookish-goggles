@@ -50,7 +50,7 @@ export default async function DashboardLayout({
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div>
             <p className="text-sm font-semibold text-slate-900">
-              Vencimientos Tributarios{org ? ` · ${org.name}` : ""}
+              Contaryx{org ? ` · ${org.name}` : ""}
             </p>
             <p className="text-xs text-slate-500">
               {profile.full_name} · {isAdmin ? "Administrador" : "Colaborador"}

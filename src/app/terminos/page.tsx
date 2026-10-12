@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Términos y tratamiento de datos · Vencimientos Tributarios" };
+export const metadata = { title: "Términos y tratamiento de datos · Contaryx" };
 
 // Plantilla base: el responsable debe completarla y revisarla con asesoría
 // jurídica antes de vender (identificación, canales de atención, etc.).

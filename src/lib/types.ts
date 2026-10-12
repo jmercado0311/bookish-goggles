@@ -63,6 +63,8 @@ export interface Company {
   municipio: string | null;
   departamento: string | null;
   iva_periodicidad: IvaPeriodicidad;
+  /** Grupo NIIF (Decreto 2420 de 2015); null si aún no se ha indicado. */
+  niif_grupo: "grupo1" | "grupo2" | "grupo3" | null;
   created_by: string | null;
   created_at: string;
 }

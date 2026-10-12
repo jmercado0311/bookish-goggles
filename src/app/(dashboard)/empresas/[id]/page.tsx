@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import type { Company, CompanyIca, CompanyResponsibility, CustomObligation } from "@/lib/types";
+import { FRAMEWORKS } from "@/lib/financial/frameworks";
 import { CompanyForm } from "../company-form";
 import { ResponsibilitiesEditor } from "./responsibilities-editor";
 import { IcaEditor } from "./ica-editor";
@@ -48,6 +49,11 @@ export default async function EmpresaDetailPage({
           </p>
           <p>
             {(company as Company).municipio}, {(company as Company).departamento}
+          </p>
+          <p>
+            {(company as Company).niif_grupo
+              ? FRAMEWORKS[(company as Company).niif_grupo!].label
+              : "Grupo NIIF sin definir"}
           </p>
         </div>
       )}

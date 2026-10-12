@@ -12,15 +12,15 @@ const FEATURES: Record<string, string[]> = {
     "Correo semanal a cada colaborador",
   ],
   estados_financieros: [
-    "Importa el balance de prueba en Excel",
-    "Clasificación automática PUC → NIIF",
-    "Situación financiera, resultados, patrimonio y flujo de efectivo",
-    "Descarga en Excel y PDF con firmas",
+    "Juego completo según el grupo NIIF (1, 2 o 3) de cada empresa",
+    "Importa el balance de prueba en Excel y lo clasifica de PUC a NIIF",
+    "Verificación de cumplimiento normativo antes de emitir",
+    "Certificación (art. 37 Ley 222) y descarga en Excel y PDF",
   ],
   notas: [
     "Entidad, bases de preparación y políticas contables",
     "Una nota por rubro con detalle y variaciones",
-    "Grupo 1, 2 y 3 (Decreto 2420 de 2015)",
+    "Referencias de NIC/NIIF o Secciones PYMES según el grupo",
     "Textos editables por el contador",
   ],
   indicadores: [
@@ -48,7 +48,7 @@ export default async function Home() {
     <div className="flex flex-1 flex-col bg-white">
       <header className="border-b border-slate-200">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <p className="text-sm font-semibold text-slate-900">Vencimientos Tributarios</p>
+          <p className="text-lg font-bold tracking-tight text-slate-900">Contaryx</p>
           <div className="flex gap-2">
             <Link href="/login" className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100">
               Ingresar
@@ -80,6 +80,21 @@ export default async function Home() {
           </div>
           <p className="mt-3 text-xs text-slate-500">Sin tarjeta de crédito. Instálala en el celular o el computador como app.</p>
         </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-4xl px-4 pt-14">
+        <h2 className="mb-2 text-center text-xl font-semibold text-slate-900">Mira cómo funciona</h2>
+        <p className="mb-6 text-center text-sm text-slate-500">
+          Menos riesgo de sanciones y estados financieros conforme al grupo NIIF de cada empresa.
+        </p>
+        <video
+          controls
+          preload="metadata"
+          poster="/video/contaryx-demo-poster.jpg"
+          className="w-full rounded-2xl border border-slate-200 shadow-sm"
+        >
+          <source src="/video/contaryx-demo.mp4" type="video/mp4" />
+        </video>
       </section>
 
       <section className="mx-auto w-full max-w-6xl px-4 py-14">

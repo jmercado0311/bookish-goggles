@@ -13,7 +13,7 @@ import {
   type SignMode,
 } from "@/lib/financial/parse-trial-balance";
 import { RUBRO_BY_KEY } from "@/lib/financial/puc-mapping";
-import { FRAMEWORK_LABEL, type Framework } from "@/lib/financial/notes";
+import { FRAMEWORKS, FRAMEWORK_GUIDE, type Framework } from "@/lib/financial/frameworks";
 
 const COLUMN_LABELS: Record<ColumnKey, string> = {
   code: "Código de cuenta *",
@@ -76,7 +76,8 @@ export function ImportWizard({
   const [companyId, setCompanyId] = useState(defaultCompanyId ?? "");
   const [periodStart, setPeriodStart] = useState(`${lastYear}-01-01`);
   const [periodEnd, setPeriodEnd] = useState(`${lastYear}-12-31`);
-  const [framework, setFramework] = useState<Framework>("grupo2");
+  // Grupo elegido aquí solo cuando la empresa todavía no lo tiene definido
+  const [grupoElegido, setGrupoElegido] = useState<Framework | "">("");
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<Cell[][] | null>(null);
   const [headerRow, setHeaderRow] = useState(0);
@@ -121,10 +122,30 @@ export function ImportWizard({
 
   const headers = rows?.[headerRow]?.map((c, i) => `${String.fromCharCode(65 + (i % 26))}: ${c ?? ""}`) ?? [];
 
+  const company = companies.find((c) => c.id === companyId);
+  const grupo: Framework | "" = company?.niif_grupo ?? grupoElegido;
+
   async function handleSave() {
     if (!result || !companyId) return;
+    if (!grupo) {
+      setError("Indica a qué grupo NIIF pertenece la empresa.");
+      return;
+    }
     setError(null);
     setSaving(true);
+
+    if (!company?.niif_grupo) {
+      const res = await fetch(`/api/companies/${companyId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ niif_grupo: grupo }),
+      });
+      if (!res.ok) {
+        setSaving(false);
+        setError("No se pudo guardar el grupo NIIF de la empresa.");
+        return;
+      }
+    }
     const res = await fetch("/api/financial/trial-balances", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -132,7 +153,6 @@ export function ImportWizard({
         company_id: companyId,
         period_start: periodStart,
         period_end: periodEnd,
-        framework,
         source_file_name: fileName,
         lines: result.lines,
       }),
@@ -163,16 +183,31 @@ export function ImportWizard({
             ))}
           </select>
         </label>
-        <label className="text-sm">
-          <span className="mb-1 block font-medium text-slate-700">Marco técnico</span>
-          <select value={framework} onChange={(e) => setFramework(e.target.value as Framework)} className={input}>
-            {(Object.keys(FRAMEWORK_LABEL) as Framework[]).map((f) => (
-              <option key={f} value={f}>
-                {FRAMEWORK_LABEL[f]}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="text-sm">
+          <span className="mb-1 block font-medium text-slate-700">Grupo NIIF de la empresa</span>
+          {!company ? (
+            <p className="text-xs text-slate-500">Selecciona primero la empresa.</p>
+          ) : company.niif_grupo ? (
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-slate-700">
+              {FRAMEWORKS[company.niif_grupo].label}
+              <a href={`/empresas/${company.id}`} className="ml-2 text-xs text-blue-600 hover:underline">
+                cambiar
+              </a>
+            </p>
+          ) : (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-amber-700">
+                Esta empresa aún no tiene grupo NIIF. ¿A cuál pertenece?
+              </p>
+              {(Object.keys(FRAMEWORKS) as Framework[]).map((g) => (
+                <label key={g} className="flex gap-2 text-xs" title={FRAMEWORK_GUIDE[g]}>
+                  <input type="radio" name="grupo" checked={grupoElegido === g} onChange={() => setGrupoElegido(g)} />
+                  {FRAMEWORKS[g].label}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">Periodo desde</span>
           <input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className={input} />

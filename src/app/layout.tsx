@@ -14,14 +14,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vencimientos Tributarios",
+  title: "Contaryx",
   description:
     "Vencimientos DIAN, estados financieros NIIF, notas e indicadores financieros para contadores en Colombia.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Vencimientos",
+    title: "Contaryx",
   },
   icons: {
     icon: "/icons/icon.svg",

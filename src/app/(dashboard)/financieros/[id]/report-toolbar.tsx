@@ -2,6 +2,7 @@
 
 import type { CashFlow, EquityChanges, StatementLine } from "@/lib/financial/statements";
 import { exportFinancialStatementsToExcel } from "@/lib/export/financial-excel";
+import type { FrameworkSpec } from "@/lib/financial/frameworks";
 import type { ReportInfo } from "./report-header";
 
 export function PrintButton() {
@@ -17,6 +18,7 @@ export function PrintButton() {
 
 export function ReportToolbar(props: {
   info: ReportInfo;
+  spec: FrameworkSpec;
   balance: StatementLine[];
   income: StatementLine[];
   equity: EquityChanges;

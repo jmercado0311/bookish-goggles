@@ -12,7 +12,9 @@ import {
   type TBLine,
 } from "@/lib/financial/statements";
 import { computeIndicators } from "@/lib/financial/indicators";
-import { buildNotes, type Framework } from "@/lib/financial/notes";
+import { buildNotes } from "@/lib/financial/notes";
+import { FRAMEWORKS, type Framework } from "@/lib/financial/frameworks";
+import { complianceChecks } from "@/lib/financial/compliance";
 import { Paywall } from "../../paywall";
 import type { ReportInfo } from "./report-header";
 import { StatementsView } from "./statements-view";
@@ -21,6 +23,7 @@ import { NotesView } from "./notes-view";
 import { ClassificationView } from "./classification-view";
 import { ReportSettings } from "./report-settings";
 import { Signatures } from "./signatures";
+import { GroupPrompt } from "./group-prompt";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -29,7 +32,6 @@ interface TrialBalance {
   company_id: string;
   period_start: string;
   period_end: string;
-  framework: Framework;
   source_file_name: string | null;
   representante_legal: string | null;
   contador_nombre: string | null;
@@ -110,6 +112,13 @@ export default async function TrialBalancePage({
   const lines = await loadLines(supabase, id);
   const prevLines = comparative ? await loadLines(supabase, comparative.id) : null;
 
+  // El marco técnico es el grupo NIIF actual de la empresa
+  const framework: Framework | null = company.niif_grupo;
+  if (!framework) {
+    return <GroupPrompt companyId={company.id} razonSocial={company.razon_social} canEdit={isAdmin} />;
+  }
+  const spec = FRAMEWORKS[framework];
+
   const income = incomeStatement(lines);
   const incomePrev = prevLines ? incomeStatement(prevLines) : null;
   const bs = balanceSheet(lines);
@@ -136,14 +145,26 @@ export default async function TrialBalancePage({
   if (tab.module && !enabled[tab.module]) {
     content = <Paywall moduleName={tab.label} isAdmin={isAdmin} />;
   } else if (tab.key === "estados") {
+    const cash = cashFlow(lines, income, bs);
     content = (
       <StatementsView
         info={info}
+        spec={spec}
+        checks={complianceChecks({
+          spec,
+          lines,
+          balance: bs,
+          income,
+          cash,
+          hasComparativeIncome: incomePrev !== null,
+          representanteLegal: tb.representante_legal,
+          contador: tb.contador_nombre,
+        })}
         balance={bs}
         incomeLines={incomeStatementLines(income, incomePrev)}
         incomeClosed={income.cerrado}
         equity={equityChanges(bs, income)}
-        cash={cashFlow(lines, income, bs)}
+        cash={cash}
         signatures={signatures}
       />
     );
@@ -163,7 +184,7 @@ export default async function TrialBalancePage({
             tipoContribuyente: company.tipo_contribuyente,
             periodStart: tb.period_start,
             periodEnd: tb.period_end,
-            framework: tb.framework,
+            framework,
           },
           lines,
           overrides
@@ -194,7 +215,7 @@ export default async function TrialBalancePage({
           <p className="text-sm text-slate-500">
             Balance de prueba del {tb.period_start} al {tb.period_end}
             {tb.source_file_name ? ` · ${tb.source_file_name}` : ""}
-            {org ? ` · ${org.name}` : ""}
+            {org ? ` · ${org.name}` : ""} · {spec.short}
           </p>
         </div>
         {isAdmin && <ReportSettings trialBalance={tb} companyId={tb.company_id} />}

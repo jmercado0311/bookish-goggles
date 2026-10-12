@@ -14,7 +14,7 @@ export function createMailer() {
 export async function sendWeeklyDigestEmail(to: string, subject: string, html: string) {
   const mailer = createMailer();
   await mailer.sendMail({
-    from: `Vencimientos Tributarios <${process.env.GMAIL_USER}>`,
+    from: `Contaryx <${process.env.GMAIL_USER}>`,
     to,
     subject,
     html,

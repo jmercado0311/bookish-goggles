@@ -1,6 +1,6 @@
 {
-  "name": "Vencimientos Tributarios",
-  "short_name": "Vencimientos",
+  "name": "Contaryx",
+  "short_name": "Contaryx",
   "description": "Vencimientos DIAN, estados financieros NIIF, notas e indicadores para contadores.",
   "start_url": "/",
   "scope": "/",

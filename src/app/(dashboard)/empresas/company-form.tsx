@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Company } from "@/lib/types";
+import { FRAMEWORKS, FRAMEWORK_GUIDE, type Framework } from "@/lib/financial/frameworks";
 
 const TIPOS_CONTRIBUYENTE = [
   { value: "persona_natural", label: "Persona natural" },
@@ -33,6 +34,7 @@ export function CompanyForm({ company }: { company?: Company }) {
     municipio: company?.municipio ?? "Fonseca",
     departamento: company?.departamento ?? "La Guajira",
     iva_periodicidad: company?.iva_periodicidad ?? "bimestral",
+    niif_grupo: company?.niif_grupo ?? "",
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,6 +46,10 @@ export function CompanyForm({ company }: { company?: Company }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!form.niif_grupo) {
+      setError("Indica a qué grupo NIIF pertenece la empresa.");
+      return;
+    }
     setLoading(true);
 
     const url = company ? `/api/companies/${company.id}` : "/api/companies";
@@ -194,6 +200,39 @@ export function CompanyForm({ company }: { company?: Company }) {
           />
         </div>
       </div>
+
+      <fieldset>
+        <legend className="mb-1 block text-sm font-medium text-slate-700">
+          ¿A qué grupo NIIF pertenece la empresa? *
+        </legend>
+        <p className="mb-2 text-xs text-slate-500">
+          Define el marco técnico (Decreto 2420 de 2015) con el que Contaryx prepara sus estados
+          financieros y notas.
+        </p>
+        <div className="space-y-2">
+          {(Object.keys(FRAMEWORKS) as Framework[]).map((g) => (
+            <label
+              key={g}
+              className={`flex cursor-pointer gap-3 rounded-xl border p-3 ${
+                form.niif_grupo === g ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <input
+                type="radio"
+                name="niif_grupo"
+                value={g}
+                checked={form.niif_grupo === g}
+                onChange={() => update("niif_grupo", g)}
+                className="mt-1"
+              />
+              <span>
+                <span className="block text-sm font-medium text-slate-900">{FRAMEWORKS[g].label}</span>
+                <span className="block text-xs text-slate-500">{FRAMEWORK_GUIDE[g]}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

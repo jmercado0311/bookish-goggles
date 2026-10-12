@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeCompanyDeadlines } from "@/lib/tax-rules/compute-deadlines";
-import { isWithinWeek } from "@/lib/tax-rules/urgency";
 import { currentMonday } from "@/lib/tax-rules/week";
-import { buildWeeklyDigestHtml } from "@/lib/email/weekly-digest";
+import { buildWeeklyDigest } from "@/lib/email/weekly-digest";
 import { sendWeeklyDigestEmail } from "@/lib/email/send";
 import type {
   Company,
@@ -79,9 +78,8 @@ export async function GET(request: Request) {
     submittedDeclarations: (submitted ?? []) as SubmittedDeclaration[],
     years,
   });
-  const weekDeadlines = allDeadlines.filter(
-    (d) => isWithinWeek(d.due_date, monday) && !d.presentado
-  );
+  // Pendientes (sin presentar); el correo los reparte en vencidos, esta semana y próximas semanas
+  const pendingDeadlines = allDeadlines.filter((d) => !d.presentado);
 
   const accessList = (access ?? []) as UserCompanyAccess[];
   const results: { user: string; sent: boolean; error?: string }[] = [];
@@ -101,7 +99,7 @@ export async function GET(request: Request) {
               .map((a) => a.company_id)
           );
 
-    const userDeadlines = weekDeadlines.filter((d) => companyIds.has(d.company.id));
+    const userDeadlines = pendingDeadlines.filter((d) => companyIds.has(d.company.id));
 
     const { data: authUser, error: userError } = await admin.auth.admin.getUserById(profile.id);
     if (userError || !authUser.user.email) {
@@ -110,11 +108,8 @@ export async function GET(request: Request) {
     }
 
     try {
-      await sendWeeklyDigestEmail(
-        authUser.user.email,
-        `Vencimientos de la semana (${userDeadlines.length})`,
-        buildWeeklyDigestHtml(profile.full_name, userDeadlines)
-      );
+      const digest = buildWeeklyDigest(profile.full_name, userDeadlines, monday);
+      await sendWeeklyDigestEmail(authUser.user.email, digest.subject, digest.html);
       results.push({ user: profile.full_name, sent: true });
     } catch (err) {
       results.push({ user: profile.full_name, sent: false, error: String(err) });
