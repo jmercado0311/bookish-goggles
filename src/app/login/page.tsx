@@ -40,7 +40,7 @@ export default function LoginPage() {
           Vencimientos Tributarios
         </h1>
         <p className="mb-6 text-sm text-slate-500">
-          Ingresa con el usuario que te asignó tu contador.
+          Ingresa con tu correo y contraseña.
         </p>
 
         <label className="mb-1 block text-sm font-medium text-slate-700">Correo</label>
@@ -72,6 +72,13 @@ export default function LoginPage() {
         >
           {loading ? "Ingresando..." : "Ingresar"}
         </button>
+
+        <p className="mt-4 text-center text-xs text-slate-500">
+          ¿Tu despacho aún no tiene cuenta?{" "}
+          <a href="/registro" className="font-medium text-blue-600 hover:underline">
+            Pruébala gratis
+          </a>
+        </p>
       </form>
     </div>
   );

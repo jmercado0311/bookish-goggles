@@ -4,13 +4,56 @@ export interface Profile {
   id: string;
   full_name: string;
   role: UserRole;
+  organization_id: string | null;
+  is_platform_owner: boolean;
   created_at: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  nit: string | null;
+  contact_email: string | null;
+  created_at: string;
+}
+
+export type ModuleCode = "vencimientos" | "estados_financieros" | "notas" | "indicadores";
+
+export interface ServiceModule {
+  code: ModuleCode;
+  name: string;
+  description: string;
+  price_cop: number;
+  sort_order: number;
+  active: boolean;
+}
+
+export interface OrganizationSubscription {
+  organization_id: string;
+  module_code: ModuleCode;
+  active_until: string;
+  updated_at: string;
+}
+
+export interface Payment {
+  id: string;
+  organization_id: string;
+  module_code: ModuleCode;
+  months: number;
+  reference: string;
+  amount_in_cents: number;
+  status: string;
+  provider: "wompi" | "manual";
+  provider_transaction_id: string | null;
+  created_at: string;
+  processed_at: string | null;
 }
 
 export type IvaPeriodicidad = "bimestral" | "cuatrimestral";
 
 export interface Company {
   id: string;
+  organization_id: string;
   nit: string;
   dv: string | null;
   razon_social: string;

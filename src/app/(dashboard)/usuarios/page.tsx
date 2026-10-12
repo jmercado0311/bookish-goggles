@@ -3,10 +3,14 @@ import type { Company, Profile, UserCompanyAccess } from "@/lib/types";
 import { UsersManager } from "./users-manager";
 
 export default async function UsuariosPage() {
-  const { supabase } = await requireAdmin();
+  const { supabase, profile } = await requireAdmin();
 
   const [{ data: profiles }, { data: companies }, { data: access }] = await Promise.all([
-    supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("organization_id", profile.organization_id)
+      .order("created_at", { ascending: false }),
     supabase.from("companies").select("*").order("razon_social"),
     supabase.from("user_company_access").select("*"),
   ]);

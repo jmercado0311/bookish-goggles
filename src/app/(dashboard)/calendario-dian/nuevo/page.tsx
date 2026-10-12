@@ -1,8 +1,8 @@
-import { requireAdmin } from "@/lib/auth";
+import { requirePlatformOwner } from "@/lib/auth";
 import { UploadWizard } from "./upload-wizard";
 
 export default async function NuevoCalendarioPage() {
-  await requireAdmin();
+  await requirePlatformOwner();
 
   return (
     <div>

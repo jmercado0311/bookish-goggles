@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { requirePlatformOwner } from "@/lib/auth";
 import type { NitMatchMode } from "@/lib/types";
 
 interface ReviewedEntry {
@@ -11,7 +11,7 @@ interface ReviewedEntry {
 }
 
 export async function POST(request: Request) {
-  const { supabase, user } = await requireAdmin();
+  const { supabase, user } = await requirePlatformOwner();
   const { year, file_path, entries } = (await request.json()) as {
     year: number;
     file_path: string;

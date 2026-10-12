@@ -36,6 +36,7 @@ export async function GET(request: Request) {
     { data: taxCalendar },
     { data: access },
     { data: submitted },
+    { data: subscriptions },
   ] = await Promise.all([
     admin.from("profiles").select("*"),
     admin.from("companies").select("*"),
@@ -45,7 +46,15 @@ export async function GET(request: Request) {
     admin.from("tax_calendar").select("*").in("year", years),
     admin.from("user_company_access").select("*"),
     admin.from("submitted_declarations").select("*"),
+    admin
+      .from("organization_subscriptions")
+      .select("organization_id")
+      .eq("module_code", "vencimientos")
+      .gt("active_until", new Date().toISOString()),
   ]);
+
+  // Solo despachos con el módulo de vencimientos vigente reciben el correo
+  const activeOrgs = new Set((subscriptions ?? []).map((s) => s.organization_id as string));
 
   const responsibilitiesByCompany = new Map<string, CompanyResponsibility[]>();
   for (const r of (responsibilities ?? []) as CompanyResponsibility[]) {
@@ -78,10 +87,19 @@ export async function GET(request: Request) {
   const results: { user: string; sent: boolean; error?: string }[] = [];
 
   for (const profile of (profiles ?? []) as Profile[]) {
+    if (!profile.organization_id || !activeOrgs.has(profile.organization_id)) continue;
+
+    const orgCompanyIds = new Set(
+      allCompanies.filter((c) => c.organization_id === profile.organization_id).map((c) => c.id)
+    );
     const companyIds =
       profile.role === "admin"
-        ? new Set(allCompanies.map((c) => c.id))
-        : new Set(accessList.filter((a) => a.user_id === profile.id).map((a) => a.company_id));
+        ? orgCompanyIds
+        : new Set(
+            accessList
+              .filter((a) => a.user_id === profile.id && orgCompanyIds.has(a.company_id))
+              .map((a) => a.company_id)
+          );
 
     const userDeadlines = weekDeadlines.filter((d) => companyIds.has(d.company.id));
 

@@ -15,7 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Vencimientos Tributarios",
-  description: "Control de vencimientos tributarios por NIT para tus empresas.",
+  description:
+    "Vencimientos DIAN, estados financieros NIIF, notas e indicadores financieros para contadores en Colombia.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

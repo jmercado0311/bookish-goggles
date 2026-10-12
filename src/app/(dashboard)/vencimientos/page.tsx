@@ -1,4 +1,5 @@
-import { requireUser } from "@/lib/auth";
+import { hasModule, requireUser } from "@/lib/auth";
+import { Paywall } from "../paywall";
 import type {
   Company,
   CompanyIca,
@@ -12,6 +13,9 @@ import { DeadlinesView } from "./deadlines-view";
 
 export default async function VencimientosPage() {
   const { supabase, profile } = await requireUser();
+  if (!(await hasModule(supabase, "vencimientos"))) {
+    return <Paywall moduleName="Vencimientos tributarios" isAdmin={profile.role === "admin"} />;
+  }
   const year = new Date().getFullYear();
   // Año actual + el siguiente: los vencimientos "hasta enero" del año que
   // viene ya quedan visibles sin esperar el cambio de año, y sin necesidad
