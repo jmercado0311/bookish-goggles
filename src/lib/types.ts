@@ -17,7 +17,13 @@ export interface Organization {
   created_at: string;
 }
 
-export type ModuleCode = "vencimientos" | "estados_financieros" | "notas" | "indicadores";
+export type ModuleCode =
+  | "vencimientos"
+  | "estados_financieros"
+  | "notas"
+  | "indicadores"
+  | "conciliaciones"
+  | "revisoria";
 
 export interface ServiceModule {
   code: ModuleCode;

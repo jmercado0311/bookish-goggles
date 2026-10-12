@@ -12,6 +12,8 @@ Módulos (cada uno se cobra por separado, suscripción mensual con Wompi):
 | **Estados financieros NIIF** | Juego completo según el grupo NIIF de cada empresa (1, 2 o 3), con verificación de cumplimiento y certificación, desde el balance de prueba |
 | **Notas a los estados financieros** | Entidad, bases de preparación, políticas contables y una nota por rubro, editables |
 | **Indicadores financieros** | Liquidez, endeudamiento, rentabilidad, actividad, EBITDA e indicadores RUP con interpretación |
+| **Conciliaciones y auxiliares** | Conciliación bancaria automática con extractos de cualquier banco (Excel, CSV o PDF) y auxiliares de cualquier sistema contable |
+| **Revisoría fiscal** | Materialidad, matriz de riesgos, papeles de trabajo, hallazgos, dictamen NIA 700/705/706, informe art. 209 y carta de representación |
 
 Infraestructura a $0 de costo fijo: Next.js en Vercel (free tier), Supabase
 (Postgres + Auth, free tier), Gmail SMTP y Wompi (solo cobra comisión por
@@ -29,7 +31,7 @@ transacción).
 
 1. Crea un proyecto nuevo en Supabase (plan gratuito).
 2. En **SQL Editor**, ejecuta en orden los archivos de `supabase/migrations/`
-   (`0001` a `0008`). La `0008` permite ICA en varios municipios por empresa, la `0007` agrega el calendario ICA de cada despacho y la `0006` el grupo NIIF de cada empresa. La `0005` convierte la app en multi-despacho: si ya
+   (`0001` a `0009`). La `0009` crea los módulos de conciliaciones y revisoría fiscal, la `0008` permite ICA en varios municipios por empresa, la `0007` agrega el calendario ICA de cada despacho y la `0006` el grupo NIIF de cada empresa. La `0005` convierte la app en multi-despacho: si ya
    tenías datos, quedan en un "Despacho principal", los administradores
    actuales pasan a ser **dueños de la plataforma** y conservan todos los
    módulos activos por un año.
@@ -77,6 +79,15 @@ Cómo funciona el cobro: el administrador del despacho entra a **Plan y pagos**,
 elige el módulo y el periodo (1, 6 o 12 meses, con 10 % y 20 % de descuento), paga
 en Wompi y el módulo se activa solo cuando Wompi confirma el pago. Si un cliente
 te paga por transferencia, actívalo a mano desde **Plataforma**.
+
+## 4.1 IA de respaldo (opcional)
+
+Para que Contaryx entienda extractos y auxiliares con estructuras que sus
+reglas no reconocen, crea una llave en [console.anthropic.com](https://console.anthropic.com)
+y ponla como `ANTHROPIC_API_KEY` en Vercel. Solo se usa cuando las reglas no
+reconocen el archivo: se envían los encabezados y una muestra de filas (en PDF,
+el texto del extracto). El consumo queda registrado por despacho en la tabla
+`ai_usage`. Sin la llave todo funciona; el usuario ajusta las columnas a mano.
 
 ## 5. Variables de entorno
 
@@ -140,6 +151,21 @@ Abre http://localhost:3000: verás la página de venta. Entra con **Ingresar**.
   toma sus fechas de su propio calendario según municipio, periodicidad y
   dígito del NIT;
   la página avisa qué municipios de tus empresas aún no tienen calendario.
+- **Conciliaciones**: importa el extracto (Excel, CSV o PDF de cualquier banco)
+  y el auxiliar de bancos (de cualquier sistema contable). Contaryx detecta las
+  columnas, el formato de fecha y el signo de los valores comprobando que el
+  saldo cuadre fila a fila; empareja por valor, fecha cercana, número de
+  documento o cheque y partidas agrupadas (una consignación contra varios
+  recibos); y clasifica las partidas conciliatorias (GMF, comisiones,
+  intereses, retenciones, cheques pendientes, consignaciones en tránsito) con
+  la cuenta sugerida. Se puede conciliar a mano, imprimir y descargar en Excel.
+  Los auxiliares importados se consultan por cuenta, tercero, texto y fechas.
+- **Revisoría fiscal**: por empresa y cierre, con el balance de prueba calcula
+  la materialidad (NIA 320), propone la matriz de riesgos (NIA 315 / 240 / 570)
+  y los papeles de trabajo por área, detecta señales de alerta del balance,
+  registra hallazgos, sugiere la opinión (NIA 450 / 705) y genera borradores
+  editables del dictamen, del informe de los numerales 1 y 3 del art. 209 del
+  C. de Co. (ISAE 3000) y de la carta de representación (NIA 580).
 - **Usuarios**: invita colaboradores y asígnales empresas.
 - **Estados financieros**: importa el balance de prueba en Excel (.xlsx) o CSV
   exportado de Siigo, World Office, Alegra, Helisa, ContaPyme, etc. La app:

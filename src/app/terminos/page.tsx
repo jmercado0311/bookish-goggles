@@ -43,7 +43,11 @@ export default function TerminosPage() {
         <h2 className="mb-2 mt-6 font-semibold text-slate-900">4. Seguridad</h2>
         <p>
           Los datos se almacenan cifrados en tránsito, con control de acceso por despacho y por usuario.
-          Cada despacho solo puede ver su propia información.
+          Cada despacho solo puede ver su propia información. Cuando la plataforma no reconoce la
+          estructura de un extracto bancario o de un libro auxiliar, envía los encabezados y una
+          muestra de filas (o, en extractos en PDF, su texto) a un proveedor de inteligencia
+          artificial (Anthropic) que actúa como encargado del tratamiento, únicamente para identificar
+          la estructura del archivo.
         </p>
 
         <h2 className="mb-2 mt-6 font-semibold text-slate-900">5. Alcance del servicio</h2>

@@ -25,6 +25,8 @@ export default async function DashboardLayout({
     { href: "/vencimientos", label: "Vencimientos" },
     { href: "/empresas", label: "Empresas" },
     { href: "/financieros", label: "Estados financieros" },
+    { href: "/conciliaciones", label: "Conciliaciones" },
+    { href: "/revisoria", label: "Revisoría fiscal" },
     ...(isAdmin
       ? [
           { href: "/calendario-ica", label: "Calendario ICA" },

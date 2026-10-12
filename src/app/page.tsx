@@ -29,6 +29,18 @@ const FEATURES: Record<string, string[]> = {
     "Indicadores habilitantes para el RUP",
     "Interpretación automática y comparativa",
   ],
+  conciliaciones: [
+    "Extractos de cualquier banco en Excel, CSV o PDF",
+    "Auxiliares de cualquier sistema contable",
+    "Emparejamiento automático, también de partidas agrupadas",
+    "GMF, comisiones e intereses con cuenta sugerida",
+  ],
+  revisoria: [
+    "Materialidad (NIA 320) y matriz de riesgos",
+    "Papeles de trabajo por área con procedimientos NIA",
+    "Hallazgos y opinión sugerida (NIA 450 / 705)",
+    "Dictamen, informe art. 209 y carta de representación",
+  ],
 };
 
 export default async function Home() {
@@ -103,7 +115,7 @@ export default async function Home() {
           Precios mensuales por despacho, IVA incluido. Usuarios y empresas ilimitados. 10 % de descuento
           pagando 6 meses y 20 % pagando el año.
         </p>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {((modules ?? []) as ServiceModule[]).map((m) => (
             <div key={m.code} className="flex flex-col rounded-2xl border border-slate-200 p-5">
               <p className="text-sm font-semibold text-slate-900">{m.name}</p>
