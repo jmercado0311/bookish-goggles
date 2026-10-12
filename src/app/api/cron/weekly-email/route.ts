@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllByYears } from "@/lib/supabase/fetch-all";
 import { computeCompanyDeadlines } from "@/lib/tax-rules/compute-deadlines";
-import { isWithinWeek } from "@/lib/tax-rules/urgency";
 import { currentMonday } from "@/lib/tax-rules/week";
-import { buildWeeklyDigestHtml } from "@/lib/email/weekly-digest";
+import { buildWeeklyDigest } from "@/lib/email/weekly-digest";
 import { sendWeeklyDigestEmail } from "@/lib/email/send";
 import type {
   Company,
   CompanyIca,
   CompanyResponsibility,
   CustomObligation,
+  IcaCalendarEntry,
   Profile,
   SubmittedDeclaration,
   TaxCalendarEntry,
@@ -36,6 +37,8 @@ export async function GET(request: Request) {
     { data: taxCalendar },
     { data: access },
     { data: submitted },
+    { data: subscriptions },
+    icaCalendar,
   ] = await Promise.all([
     admin.from("profiles").select("*"),
     admin.from("companies").select("*"),
@@ -45,15 +48,26 @@ export async function GET(request: Request) {
     admin.from("tax_calendar").select("*").in("year", years),
     admin.from("user_company_access").select("*"),
     admin.from("submitted_declarations").select("*"),
+    admin
+      .from("organization_subscriptions")
+      .select("organization_id")
+      .eq("module_code", "vencimientos")
+      .gt("active_until", new Date().toISOString()),
+    fetchAllByYears<IcaCalendarEntry>(admin, "ica_calendar", years),
   ]);
+
+  // Solo despachos con el módulo de vencimientos vigente reciben el correo
+  const activeOrgs = new Set((subscriptions ?? []).map((s) => s.organization_id as string));
 
   const responsibilitiesByCompany = new Map<string, CompanyResponsibility[]>();
   for (const r of (responsibilities ?? []) as CompanyResponsibility[]) {
     if (!responsibilitiesByCompany.has(r.company_id)) responsibilitiesByCompany.set(r.company_id, []);
     responsibilitiesByCompany.get(r.company_id)!.push(r);
   }
-  const icaByCompany = new Map<string, CompanyIca>();
-  for (const i of (icas ?? []) as CompanyIca[]) icaByCompany.set(i.company_id, i);
+  const icaByCompany = new Map<string, CompanyIca[]>();
+  for (const i of (icas ?? []) as CompanyIca[]) {
+    icaByCompany.set(i.company_id, [...(icaByCompany.get(i.company_id) ?? []), i]);
+  }
   const customByCompany = new Map<string, CustomObligation[]>();
   for (const c of (customObligations ?? []) as CustomObligation[]) {
     if (!customByCompany.has(c.company_id)) customByCompany.set(c.company_id, []);
@@ -67,23 +81,32 @@ export async function GET(request: Request) {
     icaByCompany,
     customObligationsByCompany: customByCompany,
     taxCalendar: (taxCalendar ?? []) as TaxCalendarEntry[],
+    icaCalendar,
     submittedDeclarations: (submitted ?? []) as SubmittedDeclaration[],
     years,
   });
-  const weekDeadlines = allDeadlines.filter(
-    (d) => isWithinWeek(d.due_date, monday) && !d.presentado
-  );
+  // Pendientes (sin presentar); el correo los reparte en vencidos, esta semana y próximas semanas
+  const pendingDeadlines = allDeadlines.filter((d) => !d.presentado);
 
   const accessList = (access ?? []) as UserCompanyAccess[];
   const results: { user: string; sent: boolean; error?: string }[] = [];
 
   for (const profile of (profiles ?? []) as Profile[]) {
+    if (!profile.organization_id || !activeOrgs.has(profile.organization_id)) continue;
+
+    const orgCompanyIds = new Set(
+      allCompanies.filter((c) => c.organization_id === profile.organization_id).map((c) => c.id)
+    );
     const companyIds =
       profile.role === "admin"
-        ? new Set(allCompanies.map((c) => c.id))
-        : new Set(accessList.filter((a) => a.user_id === profile.id).map((a) => a.company_id));
+        ? orgCompanyIds
+        : new Set(
+            accessList
+              .filter((a) => a.user_id === profile.id && orgCompanyIds.has(a.company_id))
+              .map((a) => a.company_id)
+          );
 
-    const userDeadlines = weekDeadlines.filter((d) => companyIds.has(d.company.id));
+    const userDeadlines = pendingDeadlines.filter((d) => companyIds.has(d.company.id));
 
     const { data: authUser, error: userError } = await admin.auth.admin.getUserById(profile.id);
     if (userError || !authUser.user.email) {
@@ -92,11 +115,8 @@ export async function GET(request: Request) {
     }
 
     try {
-      await sendWeeklyDigestEmail(
-        authUser.user.email,
-        `Vencimientos de la semana (${userDeadlines.length})`,
-        buildWeeklyDigestHtml(profile.full_name, userDeadlines)
-      );
+      const digest = buildWeeklyDigest(profile.full_name, userDeadlines, monday);
+      await sendWeeklyDigestEmail(authUser.user.email, digest.subject, digest.html);
       results.push({ user: profile.full_name, sent: true });
     } catch (err) {
       results.push({ user: profile.full_name, sent: false, error: String(err) });

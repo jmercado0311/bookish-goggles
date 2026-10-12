@@ -4,13 +4,63 @@ export interface Profile {
   id: string;
   full_name: string;
   role: UserRole;
+  organization_id: string | null;
+  is_platform_owner: boolean;
   created_at: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  nit: string | null;
+  contact_email: string | null;
+  ejerce_revisoria: boolean;
+  created_at: string;
+}
+
+export type ModuleCode =
+  | "vencimientos"
+  | "estados_financieros"
+  | "notas"
+  | "indicadores"
+  | "conciliaciones"
+  | "revisoria";
+
+export interface ServiceModule {
+  code: ModuleCode;
+  name: string;
+  description: string;
+  price_cop: number;
+  sort_order: number;
+  active: boolean;
+}
+
+export interface OrganizationSubscription {
+  organization_id: string;
+  module_code: ModuleCode;
+  active_until: string;
+  updated_at: string;
+}
+
+export interface Payment {
+  id: string;
+  organization_id: string;
+  module_code: ModuleCode;
+  months: number;
+  reference: string;
+  amount_in_cents: number;
+  status: string;
+  provider: "wompi" | "manual";
+  provider_transaction_id: string | null;
+  created_at: string;
+  processed_at: string | null;
 }
 
 export type IvaPeriodicidad = "bimestral" | "cuatrimestral";
 
 export interface Company {
   id: string;
+  organization_id: string;
   nit: string;
   dv: string | null;
   razon_social: string;
@@ -20,6 +70,10 @@ export interface Company {
   municipio: string | null;
   departamento: string | null;
   iva_periodicidad: IvaPeriodicidad;
+  /** Grupo NIIF (Decreto 2420 de 2015); null si aún no se ha indicado. */
+  niif_grupo: "grupo1" | "grupo2" | "grupo3" | null;
+  tiene_revisor_fiscal: boolean;
+  tipo_societario: string | null;
   created_by: string | null;
   created_at: string;
 }
@@ -38,6 +92,22 @@ export interface CompanyIca {
   periodicidad: string;
   regla_dia_mes: number | null;
   fecha_puntual: string | null;
+}
+
+export type IcaPeriodicidad = "mensual" | "bimestral" | "cuatrimestral" | "semestral" | "anual";
+
+/** Fecha del calendario ICA de un municipio, cargada por el despacho. */
+export interface IcaCalendarEntry {
+  id: string;
+  organization_id: string;
+  municipio: string;
+  year: number;
+  periodicidad: IcaPeriodicidad;
+  period_label: string;
+  due_date: string;
+  /** null = aplica a todos los NIT; 0-9 = solo NIT terminados en ese dígito. */
+  last_nit_digit: number | null;
+  source_file_name: string | null;
 }
 
 export type NitMatchMode = "last_digit" | "last_two_digits";

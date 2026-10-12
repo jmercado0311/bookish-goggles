@@ -1,17 +1,23 @@
-import { requireUser } from "@/lib/auth";
+import { hasModule, requireUser } from "@/lib/auth";
+import { Paywall } from "../paywall";
 import type {
   Company,
   CompanyIca,
   CompanyResponsibility,
   CustomObligation,
+  IcaCalendarEntry,
   SubmittedDeclaration,
   TaxCalendarEntry,
 } from "@/lib/types";
+import { fetchAllByYears } from "@/lib/supabase/fetch-all";
 import { computeCompanyDeadlines } from "@/lib/tax-rules/compute-deadlines";
 import { DeadlinesView } from "./deadlines-view";
 
 export default async function VencimientosPage() {
   const { supabase, profile } = await requireUser();
+  if (!(await hasModule(supabase, "vencimientos"))) {
+    return <Paywall moduleName="Vencimientos tributarios" isAdmin={profile.role === "admin"} />;
+  }
   const year = new Date().getFullYear();
   // Año actual + el siguiente: los vencimientos "hasta enero" del año que
   // viene ya quedan visibles sin esperar el cambio de año, y sin necesidad
@@ -25,6 +31,7 @@ export default async function VencimientosPage() {
     { data: customObligations },
     { data: taxCalendar },
     { data: submitted },
+    icaCalendar,
   ] = await Promise.all([
     supabase.from("companies").select("*").order("razon_social"),
     supabase.from("company_responsibilities").select("*"),
@@ -32,6 +39,7 @@ export default async function VencimientosPage() {
     supabase.from("custom_obligations").select("*"),
     supabase.from("tax_calendar").select("*").in("year", years),
     supabase.from("submitted_declarations").select("*"),
+    fetchAllByYears<IcaCalendarEntry>(supabase, "ica_calendar", years),
   ]);
 
   const responsibilitiesByCompany = new Map<string, CompanyResponsibility[]>();
@@ -40,8 +48,10 @@ export default async function VencimientosPage() {
     responsibilitiesByCompany.get(r.company_id)!.push(r);
   }
 
-  const icaByCompany = new Map<string, CompanyIca>();
-  for (const i of (icas ?? []) as CompanyIca[]) icaByCompany.set(i.company_id, i);
+  const icaByCompany = new Map<string, CompanyIca[]>();
+  for (const i of (icas ?? []) as CompanyIca[]) {
+    icaByCompany.set(i.company_id, [...(icaByCompany.get(i.company_id) ?? []), i]);
+  }
 
   const customByCompany = new Map<string, CustomObligation[]>();
   for (const c of (customObligations ?? []) as CustomObligation[]) {
@@ -55,6 +65,7 @@ export default async function VencimientosPage() {
     icaByCompany,
     customObligationsByCompany: customByCompany,
     taxCalendar: (taxCalendar ?? []) as TaxCalendarEntry[],
+    icaCalendar,
     submittedDeclarations: (submitted ?? []) as SubmittedDeclaration[],
     years,
   });

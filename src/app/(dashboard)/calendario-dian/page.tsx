@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requirePlatformOwner } from "@/lib/auth";
 import type { CalendarUpload } from "@/lib/types";
 
 export default async function CalendarioDianPage() {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requirePlatformOwner();
 
   const { data: uploads } = await supabase
     .from("calendar_uploads")

@@ -1,7 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/actualizar-contrasena", "/api/cron"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/registro",
+  "/terminos",
+  "/actualizar-contrasena",
+  "/api/cron",
+  "/api/signup",
+  "/api/billing/webhook",
+  "/api/whatsapp/webhook",
+];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -29,7 +38,9 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublic = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
+  const { pathname } = request.nextUrl;
+  // "/" es la página de venta pública
+  const isPublic = pathname === "/" || PUBLIC_PATHS.some((path) => pathname.startsWith(path));
 
   if (!user && !isPublic) {
     const loginUrl = request.nextUrl.clone();
@@ -42,6 +53,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons/).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons/|video/).*)",
   ],
 };

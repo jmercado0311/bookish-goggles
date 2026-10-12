@@ -1,7 +1,7 @@
 {
-  "name": "Vencimientos Tributarios",
-  "short_name": "Vencimientos",
-  "description": "Control de vencimientos tributarios por NIT para empresas gestionadas por el contador.",
+  "name": "Contaryx",
+  "short_name": "Contaryx",
+  "description": "Vencimientos DIAN, estados financieros NIIF, notas e indicadores para contadores.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
