@@ -67,7 +67,7 @@ function presentanTexto(f: Framework, razonSocial: string, fechaCierre: string):
 
 export function buildDictamen(ctx: ReportContext, overrides: Record<string, string>): DocSection[] {
   const cierre = fecha(ctx.periodEnd);
-  const marco = `las Normas de Contabilidad y de Información Financiera aceptadas en Colombia (${FRAMEWORKS[ctx.framework].label})`;
+  const marco = `las Normas de Contabilidad y de Información Financiera aceptadas en Colombia, correspondientes al ${FRAMEWORKS[ctx.framework].label}`;
   const sections: DocSection[] = [];
   const add = (key: string, title: string, text: string) =>
     sections.push({ key, title, text: overrides[key] ?? text, edited: overrides[key] !== undefined });
@@ -104,11 +104,8 @@ export function buildDictamen(ctx: ReportContext, overrides: Record<string, stri
     );
   }
 
-  add(
-    "enfasis",
-    "Párrafo de énfasis (opcional, NIA 706)",
-    "[Si aplica, llame la atención sobre una cuestión presentada o revelada en los estados financieros que sea fundamental para su comprensión, por ejemplo una incertidumbre material relacionada con la empresa en funcionamiento (NIA 570). Mi opinión no se modifica en relación con esta cuestión. Si no aplica, deje esta sección vacía.]"
-  );
+  // Opcional: vacío por defecto para que no se imprima un texto de ayuda en el dictamen
+  add("enfasis", "Párrafo de énfasis", "");
 
   add(
     "responsabilidades_direccion",

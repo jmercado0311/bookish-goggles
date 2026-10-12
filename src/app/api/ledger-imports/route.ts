@@ -38,6 +38,9 @@ export async function POST(request: Request) {
       saldo: m.saldo === null || m.saldo === undefined ? null : num(m.saldo),
       valor: num(m.valor),
     }));
+  if (rows.length === 0) {
+    return NextResponse.json({ error: "Ningún movimiento tiene una fecha válida." }, { status: 400 });
+  }
   const fechas = rows.map((r: { fecha: string }) => r.fecha).sort();
 
   const { data: imp, error } = await supabase

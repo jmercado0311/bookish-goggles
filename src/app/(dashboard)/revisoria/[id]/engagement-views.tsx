@@ -596,8 +596,9 @@ function SectionBlock({ section, engagementId, canEdit }: { section: DocSection;
     if (await call(`/api/audit/engagements/${engagementId}/documents`, "PUT", { doc_key: section.key, content })) setEditing(false);
   };
 
+  const empty = !section.text.trim();
   return (
-    <div className="break-inside-avoid py-3">
+    <div className={`break-inside-avoid py-3 ${empty && !editing ? "print:hidden" : ""}`}>
       <div className="mb-1 flex items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-900">{section.title}</h3>
         {canEdit && !editing && (
@@ -626,6 +627,11 @@ function SectionBlock({ section, engagementId, canEdit }: { section: DocSection;
             </button>
           </div>
         </div>
+      ) : empty ? (
+        <p className="text-xs italic text-slate-400">
+          Opcional (NIA 706): úsalo para llamar la atención sobre una cuestión revelada en los estados financieros, por
+          ejemplo una incertidumbre sobre empresa en funcionamiento (NIA 570). Si queda vacío, no se imprime.
+        </p>
       ) : (
         <p className="whitespace-pre-line text-justify text-sm leading-relaxed text-slate-700">{section.text}</p>
       )}

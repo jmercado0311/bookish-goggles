@@ -200,7 +200,7 @@ Los despachos nuevos tienen 14 días de prueba gratis con todos los módulos
 
 ## Video de presentación
 
-`public/video/contaryx-demo.mp4` (87 s, sin narración) aparece en la página de
+`public/video/contaryx-demo.mp4` (103 s, sin narración) aparece en la página de
 inicio. Muestra cómo funciona Contaryx y sus beneficios para reducir riesgos y
 aplicar bien la norma.
 

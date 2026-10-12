@@ -100,7 +100,21 @@ export function LedgerImporter({
           setBalances(detected.outcome.movements);
         } else {
           setStatus("El formato del PDF no es estándar: analizándolo con IA…");
-          const ai = await askAi({ mode: "pdf", text: lines.join("\n"), year });
+          let ai;
+          try {
+            ai = await askAi({ mode: "pdf", text: lines.join("\n"), year });
+          } catch (err) {
+            // Sin IA: se muestra lo que leyeron las reglas para que el usuario lo revise
+            if (detected.outcome.movements.length === 0) throw err;
+            setMethod("manual");
+            setPdfMovements(chronological(detected.outcome.movements));
+            setBalances(detected.outcome.movements);
+            setError(
+              `${err instanceof Error ? err.message : "La IA no respondió."} Se muestra la lectura automática: revisa los signos y los saldos antes de guardar.`
+            );
+            setStatus(null);
+            return;
+          }
           const movements: Movement[] = ai.movimientos.map(
             (m: { fecha: string; descripcion: string; documento: string; valor: number; saldo: number | null }, i: number) => ({
               row: i + 1,
