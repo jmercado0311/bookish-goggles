@@ -64,8 +64,10 @@ export async function GET(request: Request) {
     if (!responsibilitiesByCompany.has(r.company_id)) responsibilitiesByCompany.set(r.company_id, []);
     responsibilitiesByCompany.get(r.company_id)!.push(r);
   }
-  const icaByCompany = new Map<string, CompanyIca>();
-  for (const i of (icas ?? []) as CompanyIca[]) icaByCompany.set(i.company_id, i);
+  const icaByCompany = new Map<string, CompanyIca[]>();
+  for (const i of (icas ?? []) as CompanyIca[]) {
+    icaByCompany.set(i.company_id, [...(icaByCompany.get(i.company_id) ?? []), i]);
+  }
   const customByCompany = new Map<string, CustomObligation[]>();
   for (const c of (customObligations ?? []) as CustomObligation[]) {
     if (!customByCompany.has(c.company_id)) customByCompany.set(c.company_id, []);

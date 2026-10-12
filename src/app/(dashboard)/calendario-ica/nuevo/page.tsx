@@ -1,7 +1,6 @@
 import { hasModule, requireAdmin } from "@/lib/auth";
 import type { CompanyIca, IcaCalendarEntry, IcaPeriodicidad } from "@/lib/types";
-import { ICA_PERIODICIDADES } from "@/lib/tax-rules/ica-calendar";
-import { normalizeMunicipio } from "@/lib/tax-rules/compute-deadlines";
+import { ICA_PERIODICIDADES, normalizeMunicipio } from "@/lib/tax-rules/ica-calendar";
 import { Paywall } from "../../paywall";
 import { IcaCalendarForm } from "./ica-calendar-form";
 

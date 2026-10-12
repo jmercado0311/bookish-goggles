@@ -10,6 +10,7 @@ import type {
 } from "@/lib/types";
 import { deadlineKey } from "@/lib/types";
 import { responsibilityName } from "./responsibilities";
+import { normalizeMunicipio } from "./ica-calendar";
 
 function lastDigit(nit: string): number {
   const digits = nit.replace(/\D/g, "");
@@ -26,16 +27,6 @@ function lastTwoDigits(nit: string): number {
   return Number(digits.slice(-2).padStart(2, "0"));
 }
 
-/** Municipio comparable: sin tildes, minúsculas y sin espacios sobrantes. */
-export function normalizeMunicipio(name: string): string {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 /** Próxima fecha (>= hoy) para una regla de día fijo mensual; si ya pasó este mes, usa el próximo. */
 function nextOccurrenceForDay(day: number, from: Date = new Date()): string {
   const candidate = new Date(from.getFullYear(), from.getMonth(), day);
@@ -48,7 +39,8 @@ function nextOccurrenceForDay(day: number, from: Date = new Date()): string {
 export function computeCompanyDeadlines(input: {
   companies: Company[];
   responsibilitiesByCompany: Map<string, CompanyResponsibility[]>;
-  icaByCompany: Map<string, CompanyIca>;
+  /** Municipios donde declara ICA cada empresa (puede ser más de uno). */
+  icaByCompany: Map<string, CompanyIca[]>;
   customObligationsByCompany: Map<string, CustomObligation[]>;
   taxCalendar: TaxCalendarEntry[];
   /** Calendarios ICA cargados por los despachos (se cruzan solo con empresas del mismo despacho). */
@@ -147,44 +139,46 @@ export function computeCompanyDeadlines(input: {
       }
     }
 
-    const ica = icaByCompany.get(company.id);
-    // ICA: fechas del calendario del municipio cargado por el despacho; si el
-    // despacho aún no lo ha cargado, se usa la regla manual de la empresa.
-    const icaMatches = ica
-      ? icaCalendar.filter(
-          (e) =>
-            e.organization_id === company.organization_id &&
-            yearsSet.has(e.year) &&
-            e.periodicidad === ica.periodicidad &&
-            normalizeMunicipio(e.municipio) === normalizeMunicipio(ica.municipio) &&
-            (e.last_nit_digit === null || e.last_nit_digit === digit)
-        )
-      : [];
-    for (const e of icaMatches) {
-      deadlines.push(
-        withEstado({
-          company,
-          responsibility_code: "ICA",
-          responsibility_name: `ICA (${ica!.municipio})`,
-          period_label: e.period_label,
-          due_date: e.due_date,
-          source: "ica",
-        })
+    // ICA: una empresa puede declarar en varios municipios. Las fechas salen
+    // del calendario del municipio cargado por el despacho; si aún no lo ha
+    // cargado, se usa la regla manual de ese municipio en la empresa.
+    for (const ica of icaByCompany.get(company.id) ?? []) {
+      const municipio = normalizeMunicipio(ica.municipio);
+      const code = `ICA:${municipio}`;
+      const icaMatches = icaCalendar.filter(
+        (e) =>
+          e.organization_id === company.organization_id &&
+          yearsSet.has(e.year) &&
+          e.periodicidad === ica.periodicidad &&
+          normalizeMunicipio(e.municipio) === municipio &&
+          (e.last_nit_digit === null || e.last_nit_digit === digit)
       );
-    }
-    if (ica && icaMatches.length === 0) {
-      const dueDate = ica.fecha_puntual ?? (ica.regla_dia_mes ? nextOccurrenceForDay(ica.regla_dia_mes) : null);
-      if (dueDate) {
+      for (const e of icaMatches) {
         deadlines.push(
           withEstado({
             company,
-            responsibility_code: "ICA",
+            responsibility_code: code,
             responsibility_name: `ICA (${ica.municipio})`,
-            period_label: ica.periodicidad,
-            due_date: dueDate,
+            period_label: e.period_label,
+            due_date: e.due_date,
             source: "ica",
           })
         );
+      }
+      if (icaMatches.length === 0) {
+        const dueDate = ica.fecha_puntual ?? (ica.regla_dia_mes ? nextOccurrenceForDay(ica.regla_dia_mes) : null);
+        if (dueDate) {
+          deadlines.push(
+            withEstado({
+              company,
+              responsibility_code: code,
+              responsibility_name: `ICA (${ica.municipio})`,
+              period_label: ica.periodicidad,
+              due_date: dueDate,
+              source: "ica",
+            })
+          );
+        }
       }
     }
 

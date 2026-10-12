@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import type { Company, CompanyIca, CompanyResponsibility, CustomObligation } from "@/lib/types";
+import type { Company, CompanyIca, CompanyResponsibility, CustomObligation, IcaCalendarEntry } from "@/lib/types";
+import { normalizeMunicipio } from "@/lib/tax-rules/ica-calendar";
 import { FRAMEWORKS } from "@/lib/financial/frameworks";
 import { CompanyForm } from "../company-form";
 import { ResponsibilitiesEditor } from "./responsibilities-editor";
@@ -17,12 +18,22 @@ export default async function EmpresaDetailPage({
   const { supabase, profile } = await requireUser();
   const isAdmin = profile.role === "admin";
 
-  const [{ data: company }, { data: responsibilities }, { data: ica }, { data: customObligations }] =
-    await Promise.all([
+  const [
+    { data: company },
+    { data: responsibilities },
+    { data: icas },
+    { data: customObligations },
+    { data: icaCalendar },
+  ] = await Promise.all([
       supabase.from("companies").select("*").eq("id", id).single(),
       supabase.from("company_responsibilities").select("*").eq("company_id", id),
-      supabase.from("company_ica").select("*").eq("company_id", id).maybeSingle(),
+      supabase.from("company_ica").select("*").eq("company_id", id),
       supabase.from("custom_obligations").select("*").eq("company_id", id),
+      // Municipios con calendario ICA del año en curso cargado por el despacho
+      supabase
+        .from("ica_calendar")
+        .select("municipio, periodicidad")
+        .eq("year", new Date().getFullYear()),
     ]);
 
   if (!company) notFound();
@@ -64,7 +75,19 @@ export default async function EmpresaDetailPage({
         readOnly={!isAdmin}
       />
 
-      <IcaEditor companyId={id} ica={ica as CompanyIca | null} readOnly={!isAdmin} />
+      <IcaEditor
+        companyId={id}
+        icas={(icas ?? []) as CompanyIca[]}
+        municipiosConCalendario={[
+          ...new Set(
+            ((icaCalendar ?? []) as Pick<IcaCalendarEntry, "municipio" | "periodicidad">[]).map(
+              (e) => `${normalizeMunicipio(e.municipio)}|${e.periodicidad}`
+            )
+          ),
+        ]}
+        defaultMunicipio={(company as Company).municipio}
+        readOnly={!isAdmin}
+      />
 
       <CustomObligationsEditor
         companyId={id}

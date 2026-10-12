@@ -15,6 +15,16 @@ export const ICA_PERIODICIDADES: { value: IcaPeriodicidad; label: string }[] = [
   { value: "anual", label: "Anual" },
 ];
 
+/** Municipio comparable: sin tildes, minúsculas y sin espacios sobrantes. */
+export function normalizeMunicipio(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 

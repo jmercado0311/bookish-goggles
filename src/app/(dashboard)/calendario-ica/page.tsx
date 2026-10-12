@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { hasModule, requireAdmin } from "@/lib/auth";
 import { fetchAllByYears } from "@/lib/supabase/fetch-all";
-import { normalizeMunicipio } from "@/lib/tax-rules/compute-deadlines";
+import { normalizeMunicipio } from "@/lib/tax-rules/ica-calendar";
 import type { CompanyIca, IcaCalendarEntry } from "@/lib/types";
 import { Paywall } from "../paywall";
 import { DeleteIcaCalendarButton } from "./delete-button";
